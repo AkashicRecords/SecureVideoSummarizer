@@ -115,4 +115,3 @@ To test the summarization functionality:
 
 - Gather user feedback and make necessary improvements.
 
-This plan provides a clear roadmap for the development of the application. Please confirm if you would like to proceed with this plan or if there are any modifications you would like to make. 

@@ -56,4 +56,63 @@ To test the summarization functionality:
 
 1. Upload a video using the `/video/upload` endpoint
 2. Use the returned video ID to request a summary via `/summarizer/summarize/<video_id>`
-3. Retrieve the summary using the returned summary ID via `/summarizer/summary/<summary_id>` 
+3. Retrieve the summary using the returned summary ID via `/summarizer/summary/<summary_id>`
+
+# Here is the step-by-step plan for developing the application:
+
+## Set Up the Project Structure:
+
+- Create the main project directory and subdirectories for the backend and frontend.
+- Initialize a Git repository.
+
+## Create the .gitignore File:
+
+- Add entries to ignore unnecessary files and directories.
+
+## Initialize the Backend:
+
+- Set up a virtual environment for the Python backend.
+- Install necessary dependencies (e.g., Flask, PyInstaller, etc.).
+- Create the initial backend files and directories.
+
+## Implement the Backend Functionality:
+
+- Develop the authentication module using Google SSO.
+- Implement video access and summarization features.
+- Set up logging and error handling.
+
+## Initialize the Frontend:
+
+- Create a new React application using Create React App.
+- Set up the project structure for components and assets.
+
+## Implement the Frontend Functionality:
+
+- Develop components for user authentication, video input, and summary display.
+- Integrate the frontend with the backend API.
+
+## Set Up Testing Frameworks:
+
+- Install and configure testing libraries for both backend and frontend.
+- Write unit tests and integration tests.
+
+## Set Up CI/CD with GitHub Actions:
+
+- Create workflows for testing and deployment.
+- Ensure that the workflows include steps for removing test artifacts and optimizing the application.
+
+## Documentation:
+
+- Write the README.md file with project details, installation instructions, and CI/CD badges.
+- Document the Llama installation process and integration.
+
+## Final Testing and Deployment:
+
+- Test the application thoroughly on both Windows and macOS.
+- Deploy the application using the CI/CD pipeline.
+
+## Iterate and Improve:
+
+- Gather user feedback and make necessary improvements.
+
+This plan provides a clear roadmap for the development of the application. Please confirm if you would like to proceed with this plan or if there are any modifications you would like to make. 

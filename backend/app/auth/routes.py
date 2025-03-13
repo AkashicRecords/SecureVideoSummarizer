@@ -107,8 +107,12 @@ def callback():
             'token_uri': credentials.token_uri,
             'client_id': credentials.client_id,
             'client_secret': credentials.client_secret,
-            'scopes': credentials.scopes
+            'scopes': credentials.scopes,
+            'expiry': datetime.utcnow() + timedelta(hours=1)  # Store expiration time
         }
+        
+        # Set the initial last_activity timestamp
+        session['last_activity'] = datetime.utcnow().isoformat()
         
         # Redirect to frontend with success
         frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000')

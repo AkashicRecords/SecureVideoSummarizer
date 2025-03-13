@@ -1,5 +1,5 @@
 from app import create_app
-from flask import Flask, request
+from flask import Flask, request, session, g, jsonify
 from flask_session import Session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -7,11 +7,21 @@ import os
 from dotenv import load_dotenv
 from app.config import config
 from app.auth.routes import auth_bp
+from datetime import datetime, timedelta
+from app.utils.env_validator import validate_environment_variables
 
 def create_app(config_name=None):
     """Application factory function"""
     # Load environment variables
     load_dotenv()
+    
+    # Validate environment variables
+    try:
+        validate_environment_variables()
+    except Exception as e:
+        print(f"Environment validation error: {str(e)}")
+        # In production, you might want to exit here
+        # import sys; sys.exit(1)
     
     # Determine configuration to use
     if config_name is None:
@@ -47,6 +57,22 @@ def create_app(config_name=None):
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         return response
+    
+    # Add session expiry middleware
+    @app.before_request
+    def check_session_expiry():
+        """Check if the session has expired and clear it if necessary"""
+        if 'user_info' in session:
+            # Get the last activity time
+            last_activity = session.get('last_activity')
+            
+            # If last_activity is not set or session has expired
+            if not last_activity or datetime.utcnow() - datetime.fromisoformat(last_activity) > timedelta(minutes=30):
+                session.clear()
+                return jsonify({'error': 'Session expired, please login again'}), 401
+            
+            # Update last activity time
+            session['last_activity'] = datetime.utcnow().isoformat()
     
     return app
 

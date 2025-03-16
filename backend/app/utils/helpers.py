@@ -1,28 +1,41 @@
 # Helper functions for the application
 import os
 import uuid
+import re
 from flask import current_app
 import magic
 import hashlib
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 def validate_video_format(file):
     """
     Validates if the uploaded file is a valid video format
     """
-    # Check file extension
-    allowed_extensions = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
-    if '.' not in file.filename:
-        return False
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    if ext not in allowed_extensions:
-        return False
+    # Save the file temporarily to check its type
+    temp_path = os.path.join(current_app.config['VIDEOS_DIR'], 'temp_' + secure_filename(file.filename))
+    file.save(temp_path)
     
-    # Check MIME type
-    mime = magic.from_buffer(file.read(2048), mime=True)
-    file.seek(0)  # Reset file pointer
-    
-    return mime.startswith('video/')
+    try:
+        # Use python-magic to detect file type
+        mime = magic.Magic(mime=True)
+        file_type = mime.from_file(temp_path)
+        
+        # Check if it's a video file
+        is_valid = file_type.startswith('video/')
+        
+        # List of allowed video formats
+        allowed_formats = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo']
+        is_allowed_format = file_type in allowed_formats
+        
+        return is_valid and is_allowed_format
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        
+        # Reset file pointer to beginning for future operations
+        file.seek(0)
 
 def generate_unique_id():
     """
@@ -70,4 +83,10 @@ def secure_filename(filename):
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     name, ext = os.path.splitext(filename)
     
-    return f"{name}_{timestamp}{ext}" 
+    return f"{name}_{timestamp}{ext}"
+
+def validate_video_id(video_id):
+    """Validate that the video ID is in the correct format"""
+    # Our generate_unique_id function returns a UUID without hyphens
+    uuid_pattern = re.compile(r'^[0-9a-f]{32}$')
+    return bool(uuid_pattern.match(video_id)) 

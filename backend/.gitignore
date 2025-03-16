@@ -32,11 +32,22 @@ flask_session/
 
 # Google OAuth
 client_secret*.json
+credentials/
 
 # Application specific
 videos/
 summaries/
 logs/
+*.log
+
+# Video files
+segment_*.mp4
+test_*.mp4
+extracted_segments/
+proper_videos/
+
+# Session data
+sessions/
 
 # IDE specific files
 .idea/

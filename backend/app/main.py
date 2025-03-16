@@ -9,6 +9,12 @@ from app.config import config
 from app.auth.routes import auth_bp
 from datetime import datetime, timedelta
 from app.utils.env_validator import validate_environment_variables
+from app.video.routes import video_bp
+from app.utils.error_handlers import register_error_handlers
+import argparse
+import sys
+import json
+from app.api.routes import api_bp
 
 def create_app(config_name=None):
     """Application factory function"""
@@ -47,6 +53,8 @@ def create_app(config_name=None):
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(video_bp, url_prefix='/video')
+    app.register_blueprint(api_bp, url_prefix='/api')
     # ... register other blueprints ...
     
     # Add security headers middleware
@@ -74,8 +82,30 @@ def create_app(config_name=None):
             # Update last activity time
             session['last_activity'] = datetime.utcnow().isoformat()
     
+    # Register error handlers
+    register_error_handlers(app)
+    
     return app
 
 if __name__ == '__main__':
-    app = create_app()
-    app.run(debug=app.config['DEBUG']) 
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Secure Video Summarizer')
+    parser.add_argument('--audio-file', help='Path to audio file for processing')
+    parser.add_argument('--mode', choices=['web', 'summarize'], default='web', 
+                        help='Application mode: web server or summarize audio')
+    args = parser.parse_args()
+    
+    if args.mode == 'summarize' and args.audio_file:
+        # Process the audio file directly
+        from app.summarizer.processor import process_audio_file
+        try:
+            result = process_audio_file(args.audio_file)
+            print(json.dumps(result, indent=2))
+            sys.exit(0)
+        except Exception as e:
+            print(f"Error processing audio: {str(e)}")
+            sys.exit(1)
+    else:
+        # Start the web server
+        app = create_app()
+        app.run(debug=app.config['DEBUG']) 

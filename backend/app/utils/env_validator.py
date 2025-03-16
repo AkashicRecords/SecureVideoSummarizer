@@ -17,7 +17,9 @@ def validate_environment_variables():
     required_vars = [
         'SECRET_KEY',
         'GOOGLE_CLIENT_SECRETS_FILE',
-        'FRONTEND_URL'
+        'FRONTEND_URL',
+        'BROWSER_EXTENSION_ID',
+        'ALLOWED_ORIGINS'
     ]
     
     # Check required variables

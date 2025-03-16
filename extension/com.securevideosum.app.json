@@ -1,0 +1,9 @@
+{
+  "name": "com.securevideosum.app",
+  "description": "Secure Video Summarizer Native Messaging Host",
+  "path": "/path/to/your/app/native_messaging_host.py",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://your-extension-id-here/"
+  ]
+} 

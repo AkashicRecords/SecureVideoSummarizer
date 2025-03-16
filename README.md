@@ -1,6 +1,54 @@
 # Secure Video Summarizer
 
-A secure application for summarizing video content with privacy-focused features.
+<div align="center">
+  <img src="Assets/SVS.jpg" alt="Secure Video Summarizer Logo" width="200"/>
+</div>
+
+[![Tests Status](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/run-tests.yml/badge.svg)](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/run-tests.yml)
+[![Release Status](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/create-release.yml/badge.svg)](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/create-release.yml)
+
+A privacy-focused video summarization application that extracts key points from video content while keeping all processing secure and local.
+
+## Repository Structure
+
+This repository contains three main components:
+
+- **[Backend](backend/)**: The core Flask application that handles video processing, transcription, and summarization
+- **[Frontend](frontend/)**: React-based user interface for the application
+- **[Extension](extension/)**: Browser extension for integrating with the Olympus Learning Platform
+
+## Project Overview
+
+The Secure Video Summarizer is a comprehensive solution for generating concise summaries of video content. It places a strong emphasis on privacy and security, ensuring that all video processing happens locally without sending sensitive content to third-party services.
+
+### Key Features
+
+- **Privacy-Focused Video Processing**: Process videos locally with no data sent to external services
+- **LLM Integration**: Utilize local LLM models via Ollama for high-quality summarization
+- **Google OAuth Authentication**: Secure user authentication
+- **Browser Extension Integration**: Capture and summarize videos from the Olympus Learning Platform
+- **Customizable Summarization**: Control the length, format, and focus of summaries
+- **Cross-Platform Support**: Available for macOS and Windows
+
+## Getting Started
+
+Each component has its own README with detailed setup instructions:
+
+- [Backend README](backend/README.md)
+- [Frontend README](frontend/README.md)
+- [Extension README](extension/README.md)
+
+## Development Status
+
+The project is actively developed with automated CI/CD pipelines to ensure code quality and streamlined releases:
+
+- **Automated Testing**: All code changes are tested automatically
+- **Continuous Integration**: Pull requests are verified before merging
+- **Release Management**: Automated creation of platform-specific packages
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Features
 
@@ -21,6 +69,50 @@ A secure application for summarizing video content with privacy-focused features
 - **Transcription**: Conversion of speech to text
 - **Summarization**: AI-powered summarization of video content
 - **Secure Storage**: Encrypted storage of videos and summaries
+- **Browser Integration**: Summarize videos directly from learning platforms
+
+## Browser Integration
+
+The application includes a browser extension that allows you to summarize videos from learning platforms like Olympus:
+
+### Installation
+
+1. Navigate to the `extension` directory
+2. Install the extension in Chrome:
+   - Open Chrome and go to `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked" and select the `extension` directory
+
+### Native Messaging Host Setup
+1. Edit `extension/com.securevideosum.app.json` to update the path to your native messaging host
+2. Install the native messaging host:
+   - **Linux/macOS**: Copy the JSON manifest to `~/.config/google-chrome/NativeMessagingHosts/`
+   - **Windows**: Add registry key pointing to the manifest file
+
+### Configuration
+1. Get your extension ID from Chrome's extension page
+2. Update your `.env` file with:
+   ```
+   BROWSER_EXTENSION_ID=your-extension-id-here
+   ALLOWED_ORIGINS=https://olympus.mygreatlearning.com
+   ```
+
+### Usage
+
+1. Navigate to a video on your learning platform
+2. Click the extension icon in your browser toolbar
+3. Click "Summarize Current Video"
+4. The application will:
+   - Capture the audio from the video
+   - Transcribe the speech to text
+   - Generate a concise summary
+   - Display the summary in the application window
+
+### Privacy Considerations
+
+- All processing happens locally on your machine
+- No video content is sent to external servers
+- Your login session is used only to access videos you already have permission to view
 
 ## Setup
 
@@ -134,89 +226,3 @@ The application uses several Python libraries:
 ### Video Endpoints
 - `POST /video/upload`: Uploads a video file
 - `GET /video/<video_id>`: Retrieves a video file
-- `DELETE /video/<video_id>`: Deletes a video file
-
-### Summarizer Endpoints
-- `POST /summarizer/summarize/<video_id>`: Generates a summary for a video
-- `GET /summarizer/summary/<summary_id>`: Retrieves a generated summary
-
-## Error Handling
-
-The application uses a centralized error handling system:
-
-- **Custom APIError Class**: For consistent error responses
-- **Global Error Handlers**: Registered for common HTTP error codes (400, 404, 405, 500)
-- **Structured Error Responses**: All errors return JSON with error message and status code
-- **Detailed Logging**: All errors are logged with context information
-
-Example error response:
-```json
-{
-  "error": "Invalid video format",
-  "status_code": 400
-}
-```
-
-## Testing
-
-To test the summarization functionality:
-
-1. Upload a video using the `/video/upload` endpoint
-2. Use the returned video ID to request a summary via `/summarizer/summarize/<video_id>`
-3. Retrieve the summary using the returned summary ID via `/summarizer/summary/<summary_id>`
-
-## Security Considerations
-
-- Always use HTTPS in production
-- Regularly rotate the SECRET_KEY
-- Set appropriate file permissions for sensitive files
-- Keep dependencies updated to patch security vulnerabilities
-- Use a production-grade web server (e.g., Gunicorn) with a reverse proxy (e.g., Nginx)
-- Consider using a secrets manager for production deployments
-
-## Development Plan
-
-### Set Up the Project Structure:
-- Create the main project directory and subdirectories for the backend and frontend.
-- Initialize a Git repository.
-
-### Create the .gitignore File:
-- Add entries to ignore unnecessary files and directories.
-
-### Initialize the Backend:
-- Set up a virtual environment for the Python backend.
-- Install necessary dependencies (e.g., Flask, PyInstaller, etc.).
-- Create the initial backend files and directories.
-
-### Implement the Backend Functionality:
-- Develop the authentication module using Google SSO.
-- Implement video access and summarization features.
-- Set up logging and error handling.
-
-### Initialize the Frontend:
-- Create a new React application using Create React App.
-- Set up the project structure for components and assets.
-
-### Implement the Frontend Functionality:
-- Develop components for user authentication, video input, and summary display.
-- Integrate the frontend with the backend API.
-
-### Set Up Testing Frameworks:
-- Install and configure testing libraries for both backend and frontend.
-- Write unit tests and integration tests.
-
-### Set Up CI/CD with GitHub Actions:
-- Create workflows for testing and deployment.
-- Ensure that the workflows include steps for removing test artifacts and optimizing the application.
-
-### Documentation:
-- Write the README.md file with project details, installation instructions, and CI/CD badges.
-- Document the Llama installation process and integration.
-
-### Final Testing and Deployment:
-- Test the application thoroughly on both Windows and macOS.
-- Deploy the application using the CI/CD pipeline.
-
-### Iterate and Improve:
-- Gather user feedback and make necessary improvements.
-

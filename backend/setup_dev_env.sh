@@ -148,6 +148,14 @@ fi
 echo -e "${YELLOW}Making run_tests.py executable...${NC}"
 chmod +x run_tests.py
 
+# Install pre-commit hooks
+if [ "$OS" == "Darwin" ] || [ "$OS" == "Linux" ]; then
+    echo "Installing pre-commit hooks..."
+    pip install pre-commit
+    pre-commit install
+    echo "Pre-commit hooks installed successfully."
+fi
+
 echo -e "${GREEN}Development environment setup complete!${NC}"
 echo -e "${GREEN}To activate the environment, run: source venv/bin/activate${NC}"
 echo -e "${GREEN}To run tests, run: ./run_tests.py${NC}" 

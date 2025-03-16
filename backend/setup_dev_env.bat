@@ -109,6 +109,12 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-echo Development environment setup complete!
-echo To activate the environment, run: venv\Scripts\activate.bat
+REM Install pre-commit hooks
+echo Installing pre-commit hooks...
+pip install pre-commit
+pre-commit install
+echo Pre-commit hooks installed successfully.
+
+echo Development environment setup completed successfully!
+echo Run 'venv\Scripts\activate' to activate the virtual environment.
 echo To run tests, run: python run_tests.py 

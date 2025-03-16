@@ -4,6 +4,9 @@ from app.utils.error_handlers import register_error_handlers
 import os
 from dotenv import load_dotenv
 
+# Define version information
+__version__ = "0.1.0"
+
 # Load environment variables from .env file
 load_dotenv()
 

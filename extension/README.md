@@ -4,6 +4,10 @@
   <img src="../Assets/SVS.jpg" alt="Secure Video Summarizer Logo" width="200"/>
 </div>
 
+[![Tests Status](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/run-tests.yml/badge.svg)](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/run-tests.yml)
+[![Build Status](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/build-packages.yml/badge.svg)](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/build-packages.yml)
+[![Release Status](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/create-release.yml/badge.svg)](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/create-release.yml)
+
 ## Overview
 
 This browser extension integrates with the Secure Video Summarizer backend to summarize videos from the Olympus Learning Platform. It enables users to generate concise summaries of educational videos without leaving the browser.

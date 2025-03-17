@@ -5,6 +5,7 @@
 </div>
 
 [![Tests Status](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/run-tests.yml/badge.svg)](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/run-tests.yml)
+[![Build Status](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/build-packages.yml/badge.svg)](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/build-packages.yml)
 [![Release Status](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/create-release.yml/badge.svg)](https://github.com/AkashicRecords/SecureVideoSummarizer/actions/workflows/create-release.yml)
 
 A privacy-focused video summarization application that extracts key points from video content while keeping all processing secure and local.

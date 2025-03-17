@@ -1,0 +1,34 @@
+{
+  "name": "secure-video-summarizer-extension",
+  "version": "0.1.0",
+  "description": "Browser extension for Secure Video Summarizer",
+  "main": "background.js",
+  "scripts": {
+    "test": "jest",
+    "build": "mkdir -p dist && cp manifest.json background.js content.js popup.html popup.js popup.css com.securevideosum.app.json dist/ && cp -r icons dist/"
+  },
+  "keywords": [
+    "extension",
+    "video",
+    "summarizer",
+    "olympus",
+    "learning"
+  ],
+  "author": "SecureVideoSummarizer Team",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": [
+      "**/tests/**/*.js"
+    ],
+    "collectCoverage": true,
+    "coverageReporters": [
+      "lcov",
+      "text-summary"
+    ]
+  }
+} 

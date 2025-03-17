@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Video Summarizer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="icons/SVS.jpg" alt="Secure Video Summarizer Logo" class="logo">
+      <h1>Secure Video Summarizer</h1>
+    </div>
+    
+    <div id="loading" class="status-message hidden">
+      <div class="spinner"></div>
+      <p>Processing, please wait...</p>
+    </div>
+    
+    <div id="no-video" class="status-message hidden">
+      <p>⚠️ No video detected on this page.</p>
+      <p>Please navigate to a page with a video player.</p>
+    </div>
+    
+    <div id="extension-error" class="status-message error hidden">
+      <p>⚠️ There was an error connecting to the backend.</p>
+      <p>Please ensure the application is running.</p>
+      <button id="retry-connection" class="btn">Retry Connection</button>
+    </div>
+    
+    <div id="video-detected" class="status-message">
+      <p>🎬 <span id="video-title">Video detected</span></p>
+      <p>Duration: <span id="video-duration">Unknown</span></p>
+    </div>
+    
+    <div class="options-section">
+      <h2>Summary Options</h2>
+      
+      <div class="option-group">
+        <label for="length">Length:</label>
+        <select id="length" class="select-dropdown">
+          <option value="short">Short (30-100 words)</option>
+          <option value="medium" selected>Medium (50-150 words)</option>
+          <option value="long">Long (100-250 words)</option>
+        </select>
+      </div>
+      
+      <div class="option-group">
+        <label for="format">Format:</label>
+        <select id="format" class="select-dropdown">
+          <option value="paragraph" selected>Paragraph</option>
+          <option value="bullets">Bullet Points</option>
+          <option value="numbered">Numbered List</option>
+          <option value="key_points">Key Points</option>
+        </select>
+      </div>
+      
+      <div class="option-group">
+        <label>Focus On:</label>
+        <div class="checkbox-group">
+          <label class="checkbox-container">
+            <input type="checkbox" id="focus-key-points" checked>
+            <span class="checkmark"></span>
+            Key Points
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="focus-details">
+            <span class="checkmark"></span>
+            Detailed Content
+          </label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="playback-controls">
+      <h2>Playback Controls</h2>
+      
+      <div class="option-group">
+        <label for="playback-speed">Playback Speed:</label>
+        <select id="playback-speed" class="select-dropdown">
+          <option value="0.5">0.5x (Slow)</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x (Normal)</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
+          <option value="2">2x</option>
+          <option value="2.5">2.5x</option>
+          <option value="3">3x (Fast)</option>
+        </select>
+      </div>
+      
+      <div class="playback-buttons">
+        <button id="play-btn" class="btn small">Play</button>
+        <button id="pause-btn" class="btn small">Pause</button>
+        <div class="seek-controls">
+          <button id="seek-back-btn" class="btn small">-10s</button>
+          <button id="seek-forward-btn" class="btn small">+10s</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <button id="summarize-btn" class="btn primary">Summarize This Video</button>
+      <button id="open-app-btn" class="btn secondary">Open Application</button>
+    </div>
+    
+    <div id="summary-result" class="summary-container hidden">
+      <h2>Summary</h2>
+      <div id="summary-content" class="summary-content"></div>
+      <div class="summary-actions">
+        <button id="copy-summary" class="btn small">Copy</button>
+        <button id="save-summary" class="btn small">Save</button>
+        <button id="close-summary" class="btn small">Close</button>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <span>v0.1.0</span>
+      <a href="#" id="settings-link">Settings</a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 

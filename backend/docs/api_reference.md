@@ -7,6 +7,9 @@ This document provides comprehensive documentation for all APIs in the SecureVid
 - [General API Information](#general-api-information)
 - [Authentication](#authentication)
 - [Extension API Endpoints](#extension-api-endpoints)
+  - [Extension Status](#get-apiextensionstatus)
+  - [Summary Status](#get-apiextensionsummary_status)
+  - [Save Summary](#post-apiextensionsave_summary)
 - [Video Processing Endpoints](#video-processing-endpoints)
 - [Summarization Endpoints](#summarization-endpoints)
 - [Olympus Learning Platform Integration](#olympus-learning-platform-integration)
@@ -73,6 +76,10 @@ Returns information about the currently authenticated user.
 
 ## Extension API Endpoints
 
+The Secure Video Summarizer browser extension integrates with the backend through these API endpoints. The extension enables users to capture and summarize videos directly from the Olympus Learning Platform without leaving their browser.
+
+The extension communicates with these API endpoints using standard HTTP requests and handles CORS properly. All extension requests include an Origin header that is verified against the allowed origins configuration.
+
 ### GET /api/extension/status
 
 Check if the browser extension is properly connected to the backend.
@@ -83,7 +90,63 @@ Check if the browser extension is properly connected to the backend.
 {
   "status": "connected",
   "version": "1.0.0",
-  "allowed_origins": ["http://localhost:3000"]
+  "allowed_origins": ["http://localhost:3000", "chrome-extension://EXTENSION_ID_PLACEHOLDER"]
+}
+```
+
+### GET /api/extension/summary_status
+
+Check the status of the current summary operation. This endpoint is primarily used by the browser extension to poll for summary completion.
+
+**Response:**
+
+```json
+{
+  "status": "idle" // Possible values: "idle", "processing", "completed", "error"
+}
+```
+
+When the summary is completed, the response includes the generated summary:
+
+```json
+{
+  "status": "completed",
+  "summary": "The generated summary content..."
+}
+```
+
+### POST /api/extension/save_summary
+
+Save a summary generated from the browser extension.
+
+**Request Body:**
+
+```json
+{
+  "summary": "The generated summary content...",
+  "video_data": {
+    "title": "Video Title",
+    "duration": 120,
+    "src": "https://example.com/video.mp4",
+    "platform": "olympus"
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true
+}
+```
+
+Error response:
+
+```json
+{
+  "success": false,
+  "error": "Failed to save summary"
 }
 ```
 
@@ -284,6 +347,26 @@ The API uses standard HTTP status codes to indicate success or failure:
   "success": false,
   "error": "Error message",
   "details": {} // Optional additional details
+}
+```
+
+### Extension-Specific Errors
+
+For extension API endpoints, the following additional errors may occur:
+
+- `403 Forbidden`: Returned when the request's Origin header doesn't match the allowed origins configuration.
+- `400 Bad Request`: Returned when the extension sends invalid data format (e.g., missing summary or video_data).
+- `500 Internal Server Error`: Returned when saving a summary fails due to server-side issues.
+
+Example extension error response:
+
+```json
+{
+  "success": false,
+  "error": "Failed to save summary",
+  "details": {
+    "reason": "Could not write to summary directory"
+  }
 }
 ```
 

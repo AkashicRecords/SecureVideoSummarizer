@@ -1,0 +1,9 @@
+{
+  "name": "com.securevideosum.app",
+  "description": "Secure Video Summarizer Native Messaging Host",
+  "path": "/Users/lightspeedtooblivion/Documents/SecureVideoSummarizer/backend/native_messaging_host.py",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://EXTENSION_ID_PLACEHOLDER/"
+  ]
+} 

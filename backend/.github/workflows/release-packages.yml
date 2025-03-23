@@ -1,0 +1,108 @@
+name: Attach Packages to Release
+
+on:
+  workflow_run:
+    workflows: ["Build Platform Packages"]
+    types:
+      - completed
+
+jobs:
+  attach-packages:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Download macOS Artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build-packages.yml
+          workflow_conclusion: success
+          name: SecureVideoSummarizer-macOS
+          path: packages/macOS
+      
+      - name: Download Windows Artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build-packages.yml
+          workflow_conclusion: success
+          name: SecureVideoSummarizer-Windows
+          path: packages/Windows
+      
+      - name: List Files
+        run: |
+          find packages -type f | sort
+      
+      - name: Extract Release Tag
+        id: extract_tag
+        run: |
+          # Get the release tag from the files (e.g., SecureVideoSummarizer-macOS-1.0.0.zip)
+          MAC_FILE=$(find packages/macOS -name "*.zip" | head -n 1)
+          if [ -n "$MAC_FILE" ]; then
+            VERSION=$(echo $MAC_FILE | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
+            echo "Found version: $VERSION"
+          else
+            echo "Could not determine version, using default"
+            echo "VERSION=latest" >> $GITHUB_ENV
+          fi
+      
+      - name: Get Release ID
+        id: get_release
+        uses: bruceadams/get-release@v1.3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.VERSION }}
+      
+      - name: Upload macOS Assets
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs').promises;
+            const path = require('path');
+            
+            async function uploadAsset(filepath, contentType) {
+              const filename = path.basename(filepath);
+              console.log(`Uploading ${filename}...`);
+              
+              const data = await fs.readFile(filepath);
+              
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: ${{ steps.get_release.outputs.id }},
+                name: filename,
+                data: data,
+                headers: {
+                  'content-type': contentType,
+                  'content-length': data.length
+                }
+              });
+              
+              console.log(`Uploaded ${filename} successfully`);
+            }
+            
+            async function run() {
+              try {
+                // Upload macOS assets
+                const macosFiles = await fs.readdir('packages/macOS');
+                for (const file of macosFiles) {
+                  const filepath = path.join('packages/macOS', file);
+                  const contentType = file.endsWith('.zip') ? 'application/zip' : 'application/x-apple-diskimage';
+                  await uploadAsset(filepath, contentType);
+                }
+                
+                // Upload Windows assets
+                const windowsFiles = await fs.readdir('packages/Windows');
+                for (const file of windowsFiles) {
+                  const filepath = path.join('packages/Windows', file);
+                  const contentType = 'application/zip';
+                  await uploadAsset(filepath, contentType);
+                }
+              } catch (error) {
+                console.error(`Error uploading assets: ${error.message}`);
+                core.setFailed(error.message);
+              }
+            }
+            
+            run(); 

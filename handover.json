@@ -1,0 +1,159 @@
+{
+  "project": {
+    "name": "Secure Video Summarizer",
+    "description": "A Chrome extension and backend application for securely summarizing video content with privacy-focused features",
+    "repository": "https://github.com/AkashicRecords/SecureVideoSummarizer",
+    "version": "0.1.0",
+    "lastUpdated": "2024-03-21"
+  },
+  "architecture": {
+    "overview": "The project consists of three main components: a Chrome extension, a backend API service, and a frontend web application",
+    "components": {
+      "extension": {
+        "purpose": "Detects videos on web pages, extracts metadata, and communicates with the backend to generate summaries",
+        "technologies": ["JavaScript", "Chrome Extension API", "HTML", "CSS"],
+        "mainFiles": [
+          "content.js - Content script that detects and interacts with video elements",
+          "popup.js - Handles the extension popup UI and user interactions",
+          "background.js - Background script for API communication and long-running tasks",
+          "popup.html/css - UI for the extension popup"
+        ]
+      },
+      "backend": {
+        "purpose": "Processes video data, extracts audio, transcribes content, and generates summaries",
+        "technologies": ["Python", "Flask", "FFmpeg", "OpenAI API", "Whisper"],
+        "mainFiles": [
+          "app/__init__.py - Main Flask application setup",
+          "app/api/routes.py - API endpoints for video processing",
+          "app/services/transcription.py - Audio transcription service",
+          "app/services/summarization.py - Text summarization service"
+        ],
+        "environment": {
+          "python": "3.9+",
+          "venvSetup": "Python virtual environment in the /venv directory",
+          "dependencies": "Listed in requirements.txt"
+        }
+      },
+      "frontend": {
+        "purpose": "Web interface for managing summaries and accessing additional features",
+        "technologies": ["React", "TypeScript", "Tailwind CSS"],
+        "status": "Basic implementation with core functionality"
+      }
+    }
+  },
+  "videoSupport": {
+    "platforms": {
+      "standard": {
+        "description": "Standard HTML5 video elements on any website",
+        "support": "Full support for playback control and metadata extraction"
+      },
+      "youtube": {
+        "description": "YouTube embedded players",
+        "support": "Good support through custom detection logic"
+      },
+      "olympus": {
+        "description": "Olympus Learning Platform using VideoJS player",
+        "support": "Enhanced support with specific detection and control logic",
+        "details": "The Olympus platform uses VideoJS with custom implementation. Controls are limited but we've implemented special handling to detect these players and provide appropriate UI feedback.",
+        "recent_updates": [
+          "Added enhanced detection for VideoJS players",
+          "Implemented more robust playback control with fallbacks",
+          "Added platform-specific UI elements and warnings",
+          "Improved handling of video metadata extraction",
+          "Updated CSS with specific styles for Olympus-related elements"
+        ]
+      },
+      "iframe": {
+        "description": "Videos embedded in iframes",
+        "support": "Limited support with appropriate user warnings"
+      }
+    }
+  },
+  "recentWork": {
+    "summary": "Recent work has focused on improving support for the Olympus Learning Platform's VideoJS player",
+    "changes": [
+      "Enhanced VideoJS detection through multiple methods (DOM, API)",
+      "Improved video metadata extraction for VideoJS players",
+      "Added specialized UI elements for Olympus videos (badges, warnings, info)",
+      "Created virtual video elements for direct video sources",
+      "Separated playback controls into basic/advanced sections",
+      "Updated popup.js with better state management",
+      "Added specific CSS styles for Olympus-related elements",
+      "Improved error handling and feedback for limited control scenarios",
+      "Updated test cases for Olympus platform"
+    ]
+  },
+  "testing": {
+    "extension": {
+      "framework": "Jest",
+      "testFiles": [
+        "tests/test_content.js - Tests for content script",
+        "tests/test_integration.js - Tests for integration between components"
+      ],
+      "runCommands": [
+        "cd extension",
+        "npm test"
+      ]
+    },
+    "backend": {
+      "framework": "pytest",
+      "testFiles": "tests/ directory containing Python unit and integration tests",
+      "runCommands": [
+        "cd backend",
+        "pytest"
+      ]
+    }
+  },
+  "setupInstructions": {
+    "extension": {
+      "development": [
+        "Navigate to extension/ directory",
+        "Install dependencies: npm install",
+        "Load unpacked extension in Chrome from extension/ directory"
+      ]
+    },
+    "backend": {
+      "setup": [
+        "Navigate to backend/ directory",
+        "Create/activate virtual environment: source venv/bin/activate (or venv\\Scripts\\activate on Windows)",
+        "Install dependencies: pip install -r requirements.txt",
+        "Start the backend: python run.py"
+      ],
+      "configuration": "Backend configuration is stored in backend/config.py and .env file (not tracked in git)"
+    },
+    "frontend": {
+      "setup": [
+        "Navigate to frontend/ directory",
+        "Install dependencies: npm install",
+        "Start development server: npm start"
+      ]
+    }
+  },
+  "currentIssues": {
+    "extension": [
+      "VideoJS player detection may need further refinement for specific Olympus pages",
+      "Limited playback control functionality for Olympus videos needs user feedback",
+      "Virtual video element handling should be tested with more Olympus video formats"
+    ]
+  },
+  "nextSteps": {
+    "suggested": [
+      "Field testing with real Olympus Learning Platform videos",
+      "Gathering user feedback on platform-specific UI elements",
+      "Refining VideoJS player detection for edge cases",
+      "Completing integration tests for all supported platforms",
+      "Documenting Olympus-specific handling for future developers"
+    ]
+  },
+  "olympusLearning": {
+    "platformDescription": "Olympus Learning Platform is an educational platform that uses a custom VideoJS implementation for video playback",
+    "technicalDetails": {
+      "player": "VideoJS with custom configuration",
+      "videoFormat": "MP4 files with direct access or HLS streaming",
+      "structure": "Videos are embedded within a div with data-vjs-player attribute and contain a video element with vjs-tech class",
+      "detection": "Custom detection logic targeting VideoJS-specific classes and attributes",
+      "limitations": "Limited playback control due to custom implementation, but still capable of extracting metadata for summarization"
+    },
+    "integrationApproach": "We've implemented specialized detection and UI components specifically for Olympus, with clear user feedback about limitations"
+  }
+} 

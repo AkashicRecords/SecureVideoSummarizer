@@ -1,0 +1,2 @@
+[console_scripts]
+secure-video-summarizer = backend.app.main:run_app

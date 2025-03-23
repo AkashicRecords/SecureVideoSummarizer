@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Video Summarizer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container" id="popup-container">
+    <div class="header">
+      <img src="icons/SVS.jpg" alt="Secure Video Summarizer Logo" class="logo">
+      <h1>Secure Video Summarizer</h1>
+    </div>
+    
+    <div id="platform-specific-section" style="display: none;">
+      <div class="platform-info">
+        <img id="platform-icon" src="icons/video.png" alt="Platform Icon" class="platform-icon">
+        <span id="platform-name">Video Platform</span>
+      </div>
+    </div>
+    
+    <div id="loading" class="status-message hidden">
+      <div class="spinner" id="loading-indicator"></div>
+      <p id="processing-text">Processing, please wait...</p>
+    </div>
+    
+    <div id="no-video" class="status-message hidden">
+      <p>⚠️ No video detected on this page.</p>
+      <p>Please navigate to a page with a video player.</p>
+    </div>
+    
+    <div id="extension-error" class="status-container hidden">
+      <div class="status-icon">⚠️</div>
+      <p id="error-message-text">⚠️ There was an error connecting to the backend.</p>
+      <div class="action-buttons">
+        <button id="retry-connection" class="action-button">Retry Connection</button>
+        <button id="refresh-content-script" class="action-button">Refresh Content Script</button>
+      </div>
+    </div>
+    
+    <div id="video-detected" class="status-message">
+      <div id="video-info">
+        <p>🎬 <span id="video-title">Video detected</span></p>
+        <p>Duration: <span id="video-duration">Unknown</span></p>
+      </div>
+      <div id="video-warning" class="warning-text hidden"></div>
+    </div>
+    
+    <div class="options-section">
+      <h2>Summary Options</h2>
+      
+      <div class="option-group">
+        <label for="summary-length">Length:</label>
+        <select id="summary-length" class="select-dropdown">
+          <option value="50">Short (30-100 words)</option>
+          <option value="150" selected>Medium (50-150 words)</option>
+          <option value="300">Long (100-250 words)</option>
+        </select>
+      </div>
+      
+      <div class="option-group">
+        <label for="format">Format:</label>
+        <select id="format" class="select-dropdown">
+          <option value="paragraph" selected>Paragraph</option>
+          <option value="bullets">Bullet Points</option>
+          <option value="numbered">Numbered List</option>
+          <option value="key_points">Key Points</option>
+        </select>
+      </div>
+      
+      <div class="option-group">
+        <label>Focus On:</label>
+        <div class="checkbox-group">
+          <label class="checkbox-container">
+            <input type="checkbox" id="focus-key-points" checked>
+            <span class="checkmark"></span>
+            Key Points
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="focus-details">
+            <span class="checkmark"></span>
+            Detailed Content
+          </label>
+        </div>
+      </div>
+    </div>
+    
+    <div id="youtube-options" class="platform-options" style="display: none;">
+      <button id="youtube-summarize-btn" class="btn primary">Summarize YouTube Video</button>
+      <div class="option-description">
+        Capture and summarize the current YouTube video
+      </div>
+    </div>
+    
+    <div id="olympus-options" class="platform-options" style="display: none;">
+      <div class="api-status">
+        <span>API Status: </span>
+        <span id="olympus-api-status" class="status-unknown">Checking...</span>
+      </div>
+      
+      <div id="olympus-features" style="display: none;">
+        <button id="olympus-summarize-btn" class="btn primary">Summarize Olympus Video</button>
+        <button id="capture-olympus-transcript" class="btn secondary">Capture Transcript</button>
+        <div class="option-description">
+          Capture and summarize the current Olympus video
+        </div>
+      </div>
+    </div>
+    
+    <div id="playback-controls" class="playback-controls">
+      <h2>Playback Controls</h2>
+      
+      <div class="basic-controls">
+        <button id="play-btn" class="btn small control-btn">Play</button>
+        <button id="pause-btn" class="btn small control-btn">Pause</button>
+      </div>
+      
+      <div class="advanced-controls">
+        <div class="seek-controls">
+          <button id="seek-back-btn" class="btn small control-btn">-10s</button>
+          <button id="seek-forward-btn" class="btn small control-btn">+10s</button>
+        </div>
+        
+        <div class="option-group">
+          <label for="playback-speed">Playback Speed: <span id="playback-rate">1.0x</span></label>
+          <div class="playback-rate-controls">
+            <button id="decrease-rate-btn" class="btn small control-btn">-</button>
+            <button id="increase-rate-btn" class="btn small control-btn">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <button id="summarize-btn" class="btn primary">Summarize This Video</button>
+      <button id="open-app-btn" class="btn secondary">Open Application</button>
+    </div>
+    
+    <div id="results-section" style="display: none;">
+      <div id="video-title-section" style="display: none;">
+        <h3>Video:</h3>
+        <p id="video-title"></p>
+      </div>
+      
+      <div id="summary-section">
+        <h3>Summary:</h3>
+        <p id="summary-text"></p>
+      </div>
+      
+      <div class="metadata">
+        <p id="source-info"></p>
+        <p id="timestamp"></p>
+      </div>
+    </div>
+    
+    <div id="summary-result" class="summary-container hidden">
+      <h2>Summary</h2>
+      <div id="summary-content"></div>
+      <button id="copy-summary" class="btn small">Copy Text</button>
+    </div>
+    
+    <!-- Debug Controls (Hidden by Default) -->
+    <div id="debug-controls" class="debug-section hidden">
+      <h2>Debug Controls</h2>
+      <div class="debug-options">
+        <div class="option-group">
+          <label for="log-level">Log Level:</label>
+          <select id="log-level" class="select-dropdown">
+            <option value="0">Debug (All logs)</option>
+            <option value="1" selected>Info (Standard)</option>
+            <option value="2">Warn (Warnings & Errors)</option>
+            <option value="3">Error (Errors Only)</option>
+            <option value="4">None (Silence Logs)</option>
+          </select>
+        </div>
+        
+        <div class="checkbox-group">
+          <label class="checkbox-container">
+            <input type="checkbox" id="debug-mode">
+            <span class="checkmark"></span>
+            Enable Debug Mode
+          </label>
+        </div>
+        
+        <div class="checkbox-group">
+          <label class="checkbox-container">
+            <input type="checkbox" id="store-logs" checked>
+            <span class="checkmark"></span>
+            Store Logs
+          </label>
+        </div>
+      </div>
+      
+      <div class="debug-actions">
+        <button id="view-logs" class="btn small">View Logs</button>
+        <button id="clear-logs" class="btn small">Clear Logs</button>
+        <button id="test-inject" class="btn small">Test Content Script</button>
+      </div>
+    </div>
+    
+    <!-- Hidden elements for testing -->
+    <div style="display:none">
+      <video id="main-video"></video>
+      <video id="secondary-video"></video>
+      <video id="test-video"></video>
+    </div>
+    
+    <div class="footer">
+      <div class="version">v1.0.2</div>
+      <div class="debug-toggle" title="Toggle debug options">🐞</div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 

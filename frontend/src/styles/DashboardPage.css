@@ -1,0 +1,38 @@
+.dashboard-container {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.card {
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-weight: 700;
+}
+
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    margin-top: 1rem;
+  }
+  
+  .d-flex.align-items-center {
+    margin-top: 0.5rem;
+  }
+} 

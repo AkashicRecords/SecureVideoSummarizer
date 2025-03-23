@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test</title>
+</head>
+<body>
+    <h1>CORS Test</h1>
+    <button id="testBtn">Test Backend Connection</button>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing connection...';
+            
+            try {
+                // Test with Chrome extension origin
+                const response = await fetch('http://localhost:8080/api/extension/status', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<pre>Connection successful: ${JSON.stringify(data, null, 2)}</pre>`;
+                    
+                    // Check CORS headers
+                    const corsHeader = response.headers.get('Access-Control-Allow-Origin');
+                    resultDiv.innerHTML += `<p>CORS Header: ${corsHeader || 'Not present'}</p>`;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `<pre>Error: ${response.status} ${errorText}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<pre>Error: ${error.message}</pre>`;
+            }
+        });
+    </script>
+</body>
+</html> 

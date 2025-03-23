@@ -1,0 +1,5 @@
+# Log files
+*.log
+logs/*
+!logs/.gitignore
+!logs/README.md

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .metric-card {
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .metric-value {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    .bg-success-light {
+        background-color: rgba(40, 167, 69, 0.1);
+    }
+    .bg-info-light {
+        background-color: rgba(23, 162, 184, 0.1);
+    }
+    .bg-warning-light {
+        background-color: rgba(255, 193, 7, 0.1);
+    }
+    .bg-danger-light {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    .logs-container {
+        height: 300px;
+        overflow-y: auto;
+        font-family: monospace;
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .log-entry {
+        margin-bottom: 5px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+    }
+    .log-error {
+        color: #dc3545;
+    }
+    .log-warning {
+        color: #ffc107;
+    }
+    .log-info {
+        color: #17a2b8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2>System Status</h2>
+        <p class="text-muted">Overview of the SVS application status</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="metric-card bg-success-light">
+            <h5>Server Status</h5>
+            <div class="metric-value text-success">{{ status }}</div>
+            <small class="text-muted">Last checked: {{ last_checked }}</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card bg-info-light">
+            <h5>Processed Videos</h5>
+            <div class="metric-value text-info">{{ video_count }}</div>
+            <small class="text-muted">Total videos processed</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card bg-warning-light">
+            <h5>Active Jobs</h5>
+            <div class="metric-value text-warning">{{ active_jobs }}</div>
+            <small class="text-muted">Currently running tasks</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card bg-danger-light">
+            <h5>Error Rate</h5>
+            <div class="metric-value text-danger">{{ error_rate }}%</div>
+            <small class="text-muted">Last 24 hours</small>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Logs</h5>
+                <a href="/logs" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="logs-container">
+                    {% for log in recent_logs %}
+                    <div class="log-entry {% if log.level == 'ERROR' %}log-error{% elif log.level == 'WARNING' %}log-warning{% elif log.level == 'INFO' %}log-info{% endif %}">
+                        [{{ log.timestamp }}] {{ log.level }}: {{ log.message }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">File Storage Status</h5>
+                <a href="/files" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Directory</th>
+                            <th>File Count</th>
+                            <th>Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dir in directories %}
+                        <tr>
+                            <td>{{ dir.name }}</td>
+                            <td>{{ dir.file_count }}</td>
+                            <td>{{ dir.size }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Jobs</h5>
+                <a href="/jobs" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Job ID</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Started</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in recent_jobs %}
+                        <tr>
+                            <td>{{ job.id }}</td>
+                            <td>{{ job.type }}</td>
+                            <td>
+                                {% if job.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                                {% elif job.status == 'failed' %}
+                                <span class="badge bg-danger">Failed</span>
+                                {% elif job.status == 'running' %}
+                                <span class="badge bg-primary">Running</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ job.started }}</td>
+                            <td>{{ job.duration }}</td>
+                            <td>
+                                <a href="/jobs/{{ job.id }}" class="btn btn-sm btn-outline-secondary">Details</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Auto-refresh the page every 30 seconds
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+    });
+</script>
+{% endblock %} 

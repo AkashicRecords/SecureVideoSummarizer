@@ -1,0 +1,37 @@
+Metadata-Version: 2.4
+Name: secure-video-summarizer
+Version: 1.0.2
+Summary: A secure video summarization tool with Chrome extension
+Author: SecureVideoSummarizer Team
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Requires-Python: >=3.8
+Requires-Dist: flask==3.1.0
+Requires-Dist: flask-cors==5.0.1
+Requires-Dist: pydub==0.25.1
+Requires-Dist: SpeechRecognition==3.14.1
+Requires-Dist: flask-session==0.8.0
+Requires-Dist: flask-limiter==3.12
+Requires-Dist: python-dotenv==1.0.1
+Requires-Dist: transformers==4.50.0
+Requires-Dist: torch==2.6.0
+Requires-Dist: pytube==15.0.0
+Requires-Dist: google-auth-oauthlib==1.2.0
+Requires-Dist: flask-login==0.6.3
+Requires-Dist: flask-wtf==1.2.1
+Requires-Dist: google-auth==2.35.0
+Requires-Dist: google-auth-httplib2==0.2.0
+Requires-Dist: google-api-python-client==2.133.0
+Dynamic: author
+Dynamic: classifier
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

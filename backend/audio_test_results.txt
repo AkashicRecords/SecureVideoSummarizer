@@ -1,0 +1,20 @@
+test_convert_to_wav_enhanced (test_audio_processing.TestAudioProcessing.test_convert_to_wav_enhanced)
+Test enhanced WAV conversion with mocked subprocess ... ok
+test_enhance_audio_for_transcription (test_audio_processing.TestAudioProcessing.test_enhance_audio_for_transcription)
+Test audio enhancement for transcription with mocking ... ok
+test_postprocess_summary (test_audio_processing.TestAudioProcessing.test_postprocess_summary)
+Test summary post-processing ... ok
+test_preprocess_text (test_audio_processing.TestAudioProcessing.test_preprocess_text)
+Test text preprocessing for summarization ... ok
+test_summarize_text_enhanced (test_audio_processing.TestAudioProcessing.test_summarize_text_enhanced)
+Test enhanced text summarization with mocking ... ok
+test_transcribe_audio_enhanced (test_audio_processing.TestAudioProcessing.test_transcribe_audio_enhanced)
+Test enhanced audio transcription with mocking ... ok
+test_validate_audio (test_audio_processing.TestAudioProcessing.test_validate_audio)
+Test audio validation ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.003s
+
+OK
+Running audio processing tests...

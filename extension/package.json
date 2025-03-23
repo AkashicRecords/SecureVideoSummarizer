@@ -1,0 +1,57 @@
+{
+  "name": "secure-video-summarizer",
+  "version": "1.0.2",
+  "description": "Securely summarize video content from YouTube and Olympus Learning Platform",
+  "main": "background.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint .",
+    "build": "webpack --config webpack.config.js",
+    "validate-ids": "node tools/validate_element_ids.js",
+    "validate-build": "node build/verify-extension.js",
+    "validate-all": "npm run lint && npm run test && npm run validate-ids && npm run build && npm run validate-build",
+    "release": "npm run validate-all && node tools/pack-extension.js"
+  },
+  "keywords": [
+    "chrome-extension",
+    "video-summarizer",
+    "youtube",
+    "olympus",
+    "ai-summary"
+  ],
+  "author": "SVS Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.21.8",
+    "@babel/preset-env": "^7.21.5",
+    "archiver": "^5.3.1",
+    "babel-loader": "^9.1.2",
+    "chalk": "^4.1.2",
+    "copy-webpack-plugin": "^11.0.0",
+    "eslint": "^8.40.0",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0",
+    "jsdom": "^21.1.1",
+    "webpack": "^5.82.1",
+    "webpack-cli": "^5.1.1"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "moduleFileExtensions": [
+      "js",
+      "json"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "*.js",
+      "!webpack.config.js",
+      "!jest.config.js"
+    ]
+  }
+} 

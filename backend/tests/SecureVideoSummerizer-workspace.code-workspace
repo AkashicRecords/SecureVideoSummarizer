@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../app"
+		},
+		{
+			"path": "../../extension"
+		},
+		{
+			"path": "../../frontend"
+		},
+		{
+			"path": "../../venv"
+		},
+		{
+			"path": "../../Assets"
+		}
+	],
+	"settings": {}
+}

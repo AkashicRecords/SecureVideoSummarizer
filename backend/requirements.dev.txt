@@ -1,0 +1,36 @@
+# Development requirements with more flexible versioning
+# Use this file if you encounter issues with the locked requirements
+
+Flask>=2.0.1
+Jinja2>=3.0.1
+Werkzeug>=2.0.1
+itsdangerous>=2.0.1
+click>=8.0.1
+python-dotenv>=0.19.0
+transformers>=4.18.0
+torch>=2.0.0
+numpy>=1.21.0
+SpeechRecognition>=3.8.1
+pydub>=0.25.1
+pytest>=6.2.5
+pytest-cov>=2.12.1
+pytest-mock>=3.6.1
+flake8>=3.9.2
+black>=21.6b0
+isort>=5.9.2
+mypy>=0.910
+python-magic>=0.4.24
+python-magic-bin>=0.4.14; sys_platform == 'win32'
+flask-session>=0.4.0
+flask-limiter>=2.4.0
+requests>=2.25.0
+
+# Additional development tools
+pre-commit>=3.3.2
+bump2version>=1.0.1
+bandit>=1.7.5
+interrogate>=1.5.0
+coverage>=7.2.7
+tox>=4.6.0
+sphinx>=6.2.1
+sphinx-rtd-theme>=1.2.2 

@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "backend"
+		},
+		{
+			"path": "backend/tests"
+		},
+		{
+			"path": "backend/app"
+		},
+		{
+			"path": "extension"
+		},
+		{
+			"path": "frontend"
+		},
+		{
+			"path": "venv"
+		},
+		{
+			"path": "Assets"
+		}
+	],
+	"settings": {}
+}

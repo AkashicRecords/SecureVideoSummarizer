@@ -203,6 +203,41 @@
                 ],
                 "reason": "Missing dependencies identified"
             }
+        },
+        "shell_script_removal": {
+            "removed_files": [
+                {
+                    "name": "create_feature_branches.sh",
+                    "replacement": "create_feature_branches.py",
+                    "purpose": "Creates feature branches for development",
+                    "benefits": [
+                        "Better error handling",
+                        "Cross-platform compatibility",
+                        "More robust branch management"
+                    ]
+                },
+                {
+                    "name": "setup_branches.sh",
+                    "replacement": "setup_branches.py",
+                    "purpose": "Sets up development branches and configurations",
+                    "benefits": [
+                        "Improved error handling",
+                        "Cross-platform compatibility",
+                        "Better branch management"
+                    ]
+                },
+                {
+                    "name": "run_app.sh",
+                    "replacement": ["start_svs_application.py", "stop_svs_application.py"],
+                    "purpose": "Manages application startup and shutdown",
+                    "benefits": [
+                        "Split into two scripts for better process management",
+                        "Improved error handling",
+                        "Cross-platform compatibility"
+                    ]
+                }
+            ],
+            "reason": "Replace shell scripts with Python implementations for better cross-platform compatibility and error handling"
         }
     }
 } 

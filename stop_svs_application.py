@@ -47,7 +47,7 @@ if platform.system() == 'Windows':
 
 # Default settings
 class Config:
-    BACKEND_PORT = 5000
+    BACKEND_PORT = 8081
     DASHBOARD_PORT = 8080
     FORCE_KILL = False
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))

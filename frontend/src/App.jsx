@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import TranscriptionPage from './pages/TranscriptionPage';
 import AdminPanel from './pages/AdminPanel';
 import DashboardPage from './pages/DashboardPage';
+import Documentation from './pages/Documentation';
 
 // Components
 import AuthGuard from './components/AuthGuard';
@@ -19,6 +20,7 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/docs" element={<Documentation />} />
         
         {/* Protected routes */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

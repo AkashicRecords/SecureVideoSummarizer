@@ -12,6 +12,13 @@ A Chrome extension and backend service to securely summarize video content using
 - Real-time job progress tracking in dashboard
 - Cross-platform compatibility (Linux, macOS, Windows)
 
+## Documentation
+
+The project documentation is split into two main sections:
+
+1. [Logical Data Flow](docs/Logical_Data_Flow.md) - Detailed technical documentation of the system's data flow and component interactions
+2. [Architecture Diagrams](docs/architecture_diagrams.md) - Visual representations of the system architecture and data flow
+
 ## Installation Options
 
 ### Option 1: Easy Install Script

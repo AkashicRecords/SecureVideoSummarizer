@@ -209,31 +209,44 @@ label {
   margin-right: 8px;
 }
 
-/* Playback controls styles */
+/* Playback Controls */
 .playback-controls {
   margin: 16px 0;
-  padding: 16px;
-  background-color: #f8f9fa;
+  padding: 8px;
+  border: 1px solid #eee;
   border-radius: 4px;
+  background-color: #f8f9fa;
 }
 
-.playback-rate-controls {
+.basic-controls, .advanced-controls {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin: 8px 0;
+  justify-content: center;
 }
 
-.playback-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  align-items: center;
+.basic-controls button, .advanced-controls button {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.seek-controls {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
+.basic-controls button:hover, .advanced-controls button:hover {
+  background-color: #f0f0f0;
+  border-color: #ccc;
+}
+
+#playback-rate {
+  min-width: 48px;
+  text-align: center;
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
 /* Button styles */

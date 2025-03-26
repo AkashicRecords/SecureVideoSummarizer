@@ -78,7 +78,7 @@ def create_app(config_name="production"):
     register_error_handlers(app)
     
     # Set up CORS
-    origins = app.config.get('ALLOWED_ORIGINS', ['http://localhost:3000'])
+    origins = app.config.get('ALLOWED_ORIGINS', ['http://localhost:8080'])
     extension_id = app.config.get('BROWSER_EXTENSION_ID', '')
     if extension_id:
         origins.append(f"chrome-extension://{extension_id}")

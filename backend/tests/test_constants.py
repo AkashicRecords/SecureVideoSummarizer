@@ -1,5 +1,7 @@
 """Constants used in tests."""
 
+import os
+
 # Test user data
 TEST_USER_ID = 'test_user_id'
 TEST_USER_EMAIL = 'test@example.com'
@@ -51,10 +53,10 @@ TEST_FILE_SIZE = 1000
 
 # Test environment variables
 TEST_ENV_VARS = {
-    'GOOGLE_CLIENT_SECRETS_FILE': 'dummy_path',
-    'FRONTEND_URL': 'http://localhost:3000',
+    'GOOGLE_CLIENT_SECRETS_FILE': os.path.join(os.path.dirname(__file__), 'dummy_client_secrets.json'),
+    'FRONTEND_URL': 'http://localhost:8080',
     'BROWSER_EXTENSION_ID': TEST_EXTENSION_ID,
-    'ALLOWED_ORIGINS': f'http://localhost:3000,{TEST_EXTENSION_ORIGIN}',
+    'ALLOWED_ORIGINS': f'http://localhost:8080,{TEST_EXTENSION_ORIGIN}',
     'SUMMARIES_DIR': '/tmp/test_summaries'
 }
 
@@ -63,7 +65,7 @@ TEST_APP_CONFIG = {
     'TESTING': True,
     'WTF_CSRF_ENABLED': False,
     'PRESERVE_CONTEXT_ON_EXCEPTION': False,
-    'ALLOWED_ORIGINS': f'http://localhost:3000,{TEST_EXTENSION_ORIGIN}',
+    'ALLOWED_ORIGINS': f'http://localhost:8080,{TEST_EXTENSION_ORIGIN}',
     'SECRET_KEY': 'test_secret_key'
 }
 

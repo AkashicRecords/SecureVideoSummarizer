@@ -13,7 +13,7 @@
       <h1>Secure Video Summarizer</h1>
     </div>
     
-    <div id="platform-specific-section" style="display: none;">
+    <div id="platform-section" style="display: none;">
       <div class="platform-info">
         <img id="platform-icon" src="icons/video.png" alt="Platform Icon" class="platform-icon">
         <span id="platform-name">Video Platform</span>
@@ -45,6 +45,20 @@
         <p>Duration: <span id="video-duration">Unknown</span></p>
       </div>
       <div id="video-warning" class="warning-text hidden"></div>
+    </div>
+    
+    <div id="playback-controls" class="playback-controls">
+      <div class="basic-controls">
+        <button id="play-btn">Play</button>
+        <button id="pause-btn">Pause</button>
+      </div>
+      <div class="advanced-controls">
+        <button id="seek-back-btn">⏪</button>
+        <button id="seek-forward-btn">⏩</button>
+        <button id="decrease-rate-btn">-</button>
+        <span id="playback-rate">1.0x</span>
+        <button id="increase-rate-btn">+</button>
+      </div>
     </div>
     
     <div class="options-section">
@@ -104,30 +118,6 @@
         <button id="capture-olympus-transcript" class="btn secondary">Capture Transcript</button>
         <div class="option-description">
           Capture and summarize the current Olympus video
-        </div>
-      </div>
-    </div>
-    
-    <div id="playback-controls" class="playback-controls">
-      <h2>Playback Controls</h2>
-      
-      <div class="basic-controls">
-        <button id="play-btn" class="btn small control-btn">Play</button>
-        <button id="pause-btn" class="btn small control-btn">Pause</button>
-      </div>
-      
-      <div class="advanced-controls">
-        <div class="seek-controls">
-          <button id="seek-back-btn" class="btn small control-btn">-10s</button>
-          <button id="seek-forward-btn" class="btn small control-btn">+10s</button>
-        </div>
-        
-        <div class="option-group">
-          <label for="playback-speed">Playback Speed: <span id="playback-rate">1.0x</span></label>
-          <div class="playback-rate-controls">
-            <button id="decrease-rate-btn" class="btn small control-btn">-</button>
-            <button id="increase-rate-btn" class="btn small control-btn">+</button>
-          </div>
         </div>
       </div>
     </div>

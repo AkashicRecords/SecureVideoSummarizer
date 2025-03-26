@@ -36,7 +36,7 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
 REDIRECT_URI = os.environ.get('OAUTH_REDIRECT_URI', 'http://localhost:8081/api/auth/callback')
 
-# Simple in-memory user store (replace with database in production)
+# Simple in-memory user store
 users_db = {}
 
 def get_client_secrets_file():
@@ -62,6 +62,33 @@ def login_required(f):
                 return redirect(url_for('auth.login', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
+
+def role_required(role):
+    """Decorator to require a specific role for a route"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # For development/testing, allow requests without authentication
+            if os.environ.get('FLASK_ENV') == 'development' and os.environ.get('BYPASS_AUTH_FOR_TESTING') == 'true':
+                return f(*args, **kwargs)
+                
+            if 'user_id' not in session:
+                if request.is_json:
+                    return jsonify({"error": "Authentication required"}), 401
+                else:
+                    return redirect(url_for('auth.login', next=request.url))
+                    
+            # Get user from in-memory store
+            user = users_db.get(session['user_id'])
+            if not user or user.get('role') != role:
+                if request.is_json:
+                    return jsonify({"error": "Insufficient permissions"}), 403
+                else:
+                    return redirect(url_for('auth.login', next=request.url))
+                    
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 @auth_bp.route('/login', methods=['GET'])
 @limiter.limit("5 per minute")
@@ -167,7 +194,7 @@ def callback():
         logger.info(f"User authenticated successfully | Email: {user_info.get('email')} | Name: {user_info.get('name')}")
         
         # Redirect to frontend with success
-        frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000')
+        frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:8080')
         return redirect(f"{frontend_url}/auth-success")
     
     except Exception as e:
@@ -175,7 +202,7 @@ def callback():
             logger.error(f"Request {g.request_id} | Callback error: {str(e)}", exc_info=True)
         else:
             logger.error(f"Callback error: {str(e)}", exc_info=True)
-        frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000')
+        frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:8080')
         return redirect(f"{frontend_url}/auth-error?error={str(e)}")
 
 def get_user_info(credentials):
@@ -563,7 +590,8 @@ def callback():
     session['user_id'] = user_id
     
     # Redirect to frontend
-    return redirect(os.environ.get('FRONTEND_URL', 'http://localhost:8080/dashboard'))
+    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:8080')
+    return redirect(os.environ.get('FRONTEND_URL', 'http://localhost:8080'))
 
 # Routes for YouTube Premium authentication
 @auth.route("/youtube/authorize")

@@ -1,250 +1,298 @@
 #!/usr/bin/env python3
 """
 Cross-platform startup script for the Secure Video Summarizer application.
-This script provides OS-agnostic functionality equivalent to start_svs_application.sh.
+This script handles both the backend server and dashboard initialization.
 """
 
+# Only standard library imports at the top
 import os
 import sys
-import subprocess
 import platform
-import socket
-import time
-import argparse
-import signal
-import shutil
+import subprocess
 from pathlib import Path
-import webbrowser
-import json
-import atexit
-import logging
-import datetime
+import time
+import shutil
+import signal
+import socket
+import venv
 
-# Setup logging
-log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
-os.makedirs(log_dir, exist_ok=True)
-log_file = os.path.join(log_dir, f"svs_startup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
-
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(log_file),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger("SVS")
-
-# ANSI colors for Unix terminals
+# Define colors for different platforms
 class Colors:
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    RED = '\033[0;31m'
-    BLUE = '\033[0;34m'
-    CYAN = '\033[0;36m'
-    NC = '\033[0m'  # No Color
-    BOLD = '\033[1m'
+    """Color codes for terminal output on different platforms"""
+    if platform.system() == 'Windows':
+        # Windows doesn't support ANSI color codes in cmd.exe
+        # Using empty strings as fallback
+        GREEN = ''
+        RED = ''
+        CYAN = ''
+        RESET = ''
+    else:
+        # ANSI color codes for Unix-like systems
+        GREEN = '\033[92m'
+        RED = '\033[91m'
+        CYAN = '\033[96m'
+        RESET = '\033[0m'
 
-# For Windows, we'll use empty strings
-if platform.system() == 'Windows':
-    for attr in dir(Colors):
-        if not attr.startswith('__'):
-            setattr(Colors, attr, '')
-
-# Default configuration
-class Config:
-    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-    BACKEND_DIR = os.path.join(PROJECT_ROOT, 'backend')
-    BACKEND_PORT = 8081
-    DASHBOARD_PORT = 8080
-    RUN_BACKEND = True
-    RUN_DASHBOARD = True
-    RUN_TESTS = False
-    INSTALL_DEPENDENCIES = True
-    FORCE_UPDATE_DEPS = False
-    DEBUG_MODE = False
-    DEVELOPMENT_MODE = False
-    OFFLINE_MODE = False
-    SAVE_CONFIG = True
-    COLD_START = False
-    ENVIRONMENT = 'development'
-    QUIET_MODE = False
-    LOG_LEVEL = logging.INFO
-
-# Global variables for process management
-backend_process = None
-dashboard_process = None
-all_processes = []
-pid_files = []
-
-def log(color, message):
-    """Print colored log messages"""
-    if not Config.QUIET_MODE:
-        print(f"{color}{message}{Colors.NC}")
-    logger.info(message)
+def log(color, msg):
+    """Print colored output to terminal"""
+    print(f"{color}{msg}{Colors.RESET}")
 
 def show_status(message):
     """Display status message with dots"""
-    if not Config.QUIET_MODE:
-        dots_count = 40
-        dots_length = dots_count - len(message)
-        dots = '.' * dots_length
-        print(f"{message}{dots}", end='', flush=True)
-    logger.info(f"Status: {message}")
+    dots_count = 40
+    dots_length = max(0, dots_count - len(message))
+    dots = '.' * dots_length
+    print(f"{message}{dots}", end="", flush=True)
 
 def show_result(success):
-    """Show result of an operation"""
-    if not Config.QUIET_MODE:
-        if success:
-            print(f"{Colors.GREEN}Done!{Colors.NC}")
-            logger.info("Result: Success")
-        else:
-            print(f"{Colors.RED}Failed!{Colors.NC}")
-            logger.error("Result: Failed")
+    """Show result of operation"""
+    if success:
+        print(f"{Colors.GREEN}Done!{Colors.RESET}")
+    else:
+        print(f"{Colors.RED}Failed!{Colors.RESET}")
 
-def verify_directories():
-    """Verify that necessary directories exist"""
-    logger.info("Verifying directory structure")
+# Check dependencies before importing anything that requires them
+print("\n" + "=" * 80)
+print(" SECURE VIDEO SUMMARIZER - APPLICATION STARTUP ")
+print("=" * 80 + "\n")
+
+def ensure_script_dependencies():
+    """Ensure all dependencies required by this script are installed"""
+    show_status("Checking script dependencies")
     
-    # Check if we're in the right directory
-    if not os.path.isdir(Config.BACKEND_DIR):
-        error_msg = f"Backend directory not found at {Config.BACKEND_DIR}"
-        logger.error(error_msg)
-        log(Colors.RED, f"Error: {error_msg}")
-        log(Colors.RED, "Make sure you're running this script from the project root directory.")
+    # Create a temporary venv for script dependencies if needed
+    script_venv = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.script_venv')
+    if not os.path.exists(script_venv):
+        try:
+            venv.create(script_venv, with_pip=True)
+            
+            # Get venv Python path
+            if platform.system() == 'Windows':
+                venv_python = os.path.join(script_venv, 'Scripts', 'python.exe')
+                venv_pip = os.path.join(script_venv, 'Scripts', 'pip.exe')
+            else:
+                venv_python = os.path.join(script_venv, 'bin', 'python')
+                venv_pip = os.path.join(script_venv, 'bin', 'pip')
+            
+            # Install required packages
+            subprocess.run([venv_pip, 'install', 'requests', 'psutil'], check=True)
+            
+            # Restart script with venv Python
+            os.execl(venv_python, venv_python, *sys.argv)
+        except Exception as e:
+            show_result(False)
+            log(Colors.RED, f"Failed to set up script dependencies: {e}")
+            return False
+    
+    # Try importing required packages
+    try:
+        # We don't import at top level anymore, just verify we can import
+        __import__('requests')
+        __import__('psutil')
+        show_result(True)
+        return True
+    except ImportError as e:
+        show_result(False)
+        log(Colors.RED, f"Missing dependency: {e}")
         return False
-    
-    # Check for other critical directories
-    required_dirs = [
-        (Config.BACKEND_DIR, "Backend directory"),
-        (os.path.join(Config.BACKEND_DIR, "app"), "Backend app directory"),
-        (os.path.join(Config.BACKEND_DIR, "scripts"), "Backend scripts directory")
-    ]
-    
-    for dir_path, dir_desc in required_dirs:
-        if not os.path.isdir(dir_path):
-            error_msg = f"{dir_desc} not found at {dir_path}"
-            logger.error(error_msg)
-            log(Colors.RED, f"Error: {error_msg}")
-            return False
-    
-    logger.info("Directory structure verified successfully")
-    return True
 
-def check_venv_exists():
-    """Check if virtual environments exist, create them if needed"""
-    logger.info("Checking virtual environments")
-    
-    backend_venv = os.path.join(Config.BACKEND_DIR, "venv")
-    dashboard_venv = os.path.join(Config.BACKEND_DIR, "dashboard_venv")
-    
-    # Check backend venv
-    if not os.path.isdir(backend_venv):
-        log(Colors.YELLOW, "Backend virtual environment not found. Creating...")
-        logger.info("Creating backend virtual environment")
-        try:
-            python_cmd = "python" if platform.system() == "Windows" else "python3"
-            subprocess.run([python_cmd, "-m", "venv", backend_venv], check=True)
-            log(Colors.GREEN, "Backend virtual environment created successfully!")
-            logger.info("Backend virtual environment created successfully")
-        except Exception as e:
-            error_msg = f"Failed to create backend virtual environment: {e}"
-            logger.error(error_msg)
-            log(Colors.RED, f"Error: {error_msg}")
-            return False
-    
-    # Check dashboard venv if needed
-    if Config.RUN_DASHBOARD and not os.path.isdir(dashboard_venv):
-        log(Colors.YELLOW, "Dashboard virtual environment not found. Creating...")
-        logger.info("Creating dashboard virtual environment")
-        try:
-            python_cmd = "python" if platform.system() == "Windows" else "python3"
-            subprocess.run([python_cmd, "-m", "venv", dashboard_venv], check=True)
-            log(Colors.GREEN, "Dashboard virtual environment created successfully!")
-            logger.info("Dashboard virtual environment created successfully")
-        except Exception as e:
-            error_msg = f"Failed to create dashboard virtual environment: {e}"
-            logger.error(error_msg)
-            log(Colors.RED, f"Error: {error_msg}")
-            return False
-    
-    logger.info("Virtual environment check completed successfully")
-    return True
+if not ensure_script_dependencies():
+    sys.exit(1)
 
-def is_in_virtualenv():
-    """Check if we're currently running in a virtual environment"""
+# Remove the second set of imports since we already have them at the top
+# The only new ones we need are requests and psutil which are now imported in ensure_script_dependencies
+
+def check_dependencies():
+    """Check for required dependencies and install if needed"""
+    show_status("Checking for required dependencies")
+    return True  # We already checked in ensure_script_dependencies
+
+def check_in_venv():
+    """Check if running in a Python virtual environment"""
     return hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
+
+def ensure_venv_deactivated():
+    """Ensure virtual environment is deactivated"""
+    show_status("Checking for active virtual environments")
+    
+    if check_in_venv():
+        print("\r", end="")
+        show_status("Warning: Running in a virtual environment")
+        show_result(False)
+        print(f"{Colors.CYAN}This script should be run outside of virtual environments.{Colors.RESET}")
+        print(f"{Colors.CYAN}Please run 'deactivate' and try again.{Colors.RESET}")
+        return False
+    else:
+        show_result(True)
+        return True
 
 def is_port_in_use(port):
     """Check if a port is in use"""
-    logger.debug(f"Checking if port {port} is in use")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        result = s.connect_ex(('localhost', port)) == 0
-        logger.debug(f"Port {port} is {'in use' if result else 'free'}")
-        return result
+        return s.connect_ex(('localhost', port)) == 0
+
+def get_os_commands():
+    """Get OS-specific command mappings"""
+    if platform.system() == 'Windows':
+        return {
+            'find_process': ['netstat', '-ano', '|', 'findstr'],
+            'kill_process': ['taskkill', '/F', '/PID'],
+            'list_processes': ['tasklist'],
+            'python_cmd': 'python',
+            'npm_cmd': 'npm.cmd'
+        }
+    else:
+        return {
+            'find_process': ['lsof', '-ti'],
+            'kill_process': ['kill', '-9'],
+            'list_processes': ['ps', '-ef'],
+            'python_cmd': 'python3',
+            'npm_cmd': 'npm'
+        }
 
 def kill_process_on_port(port):
-    """Kill process on a given port in a cross-platform way"""
-    logger.info(f"Attempting to kill process on port {port}")
+    """Kill process on port using OS-specific commands"""
     show_status(f"Checking for processes on port {port}")
     
     if is_port_in_use(port):
         show_result(False)
-        show_status(f"Terminating process on port {port}")
+        show_status(f"Attempting to terminate process on port {port}")
         
+        os_commands = get_os_commands()
         try:
+            # Find process using port
             if platform.system() == 'Windows':
-                logger.debug(f"Using Windows method to kill process on port {port}")
-                subprocess.run(f"FOR /F \"tokens=5\" %P IN ('netstat -ano ^| findstr {port}') DO taskkill /F /PID %P", shell=True)
+                cmd = f"netstat -ano | findstr :{port}"
+                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if result.stdout:
+                    pid = result.stdout.split()[-1]
+                    # Kill the process
+                    subprocess.run([os_commands['kill_process'][0], os_commands['kill_process'][1], pid], 
+                                 check=True, capture_output=True)
             else:
-                # Unix systems
-                logger.debug(f"Using Unix method to kill process on port {port}")
-                pid_cmd = subprocess.run(f"lsof -ti:{port}", shell=True, capture_output=True, text=True)
-                if pid_cmd.stdout.strip():
-                    logger.debug(f"Found PID {pid_cmd.stdout.strip()} on port {port}")
-                    subprocess.run(f"kill -9 {pid_cmd.stdout.strip()}", shell=True)
+                cmd = f"lsof -ti:{port}"
+                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if result.stdout:
+                    pid = result.stdout.strip()
+                    # Kill the process
+                    subprocess.run([os_commands['kill_process'][0], os_commands['kill_process'][1], pid], 
+                                 check=True, capture_output=True)
             
             time.sleep(2)
-            if is_port_in_use(port):
-                show_result(False)
-                error_msg = f"Failed to terminate process on port {port}."
-                logger.error(error_msg)
-                log(Colors.RED, error_msg)
-                return False
-            else:
-                show_result(True)
-                logger.info(f"Successfully terminated process on port {port}")
-                return True
-        except Exception as e:
+            success = not is_port_in_use(port)
+            show_result(success)
+            return success
+        except subprocess.SubprocessError as e:
             show_result(False)
-            error_msg = f"Error killing process on port {port}: {e}"
-            logger.error(error_msg)
-            log(Colors.RED, error_msg)
+            log(Colors.RED, f"Failed to kill process: {e}")
             return False
     else:
         show_result(True)
-        logger.info(f"No process found on port {port}")
         return True
 
-def verify_ports_clear():
-    """Verify all required ports are clear"""
+def find_npm():
+    """Find npm executable using OS-specific commands"""
+    os_commands = get_os_commands()
+    
+    if platform.system() == 'Windows':
+        try:
+            # Try where command on Windows
+            result = subprocess.run(['where', os_commands['npm_cmd']], 
+                                 capture_output=True, text=True)
+            if result.stdout:
+                return result.stdout.splitlines()[0]
+        except subprocess.SubprocessError:
+            pass
+    else:
+        try:
+            # Try which command on Unix
+            result = subprocess.run(['which', os_commands['npm_cmd']], 
+                                 capture_output=True, text=True)
+            if result.stdout:
+                return result.stdout.strip()
+        except subprocess.SubprocessError:
+            pass
+    
+    return os_commands['npm_cmd']  # Fallback to default command
+
+def get_system_python():
+    """Get system Python path using OS-specific commands"""
+    os_commands = get_os_commands()
+    
+    try:
+        if platform.system() == 'Windows':
+            result = subprocess.run(['where', os_commands['python_cmd']], 
+                                 capture_output=True, text=True)
+            if result.stdout:
+                return result.stdout.splitlines()[0]
+        else:
+            result = subprocess.run(['which', os_commands['python_cmd']], 
+                                 capture_output=True, text=True)
+            if result.stdout:
+                return result.stdout.strip()
+    except subprocess.SubprocessError:
+        pass
+    
+    return sys.executable  # Fallback to current Python
+
+def verify_ports_clear(backend_port, dashboard_port):
+    """Verify all required ports are clear before proceeding"""
     max_retries = 3
     retry_count = 0
     all_clear = False
     
     show_status("Verifying all ports are clear")
     
+    # Try to import psutil for better process management
+    try:
+        import psutil
+        
+        def kill_process_on_port(port):
+            """Kill process running on a given port using psutil"""
+            show_status(f"Checking for processes on port {port}")
+            
+            if is_port_in_use(port):
+                show_result(False)
+                show_status(f"Terminating process on port {port}")
+                
+                # Find and kill the process using the port
+                for proc in psutil.process_iter(['pid', 'name', 'connections']):
+                    try:
+                        for conn in proc.connections(kind='inet'):
+                            if hasattr(conn, 'laddr') and conn.laddr.port == port:
+                                try:
+                                    proc.kill()
+                                    time.sleep(2)
+                                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                                    pass
+                    except (psutil.AccessDenied, psutil.NoSuchProcess):
+                        pass
+                
+                # Verify termination
+                if is_port_in_use(port):
+                    show_result(False)
+                    log(Colors.RED, f"Failed to terminate process on port {port}.")
+                    return False
+                else:
+                    show_result(True)
+                    return True
+            else:
+                show_result(True)
+                return True
+    except ImportError:
+        # Fall back to simpler method if psutil is not available
+        kill_process_on_port = simple_kill_process_on_port
+    
     while retry_count < max_retries and not all_clear:
-        if is_port_in_use(Config.BACKEND_PORT):
+        if is_port_in_use(backend_port):
             show_result(False)
-            show_status(f"Force closing port {Config.BACKEND_PORT} (attempt {retry_count+1}/{max_retries})")
-            kill_process_on_port(Config.BACKEND_PORT)
+            show_status(f"Force closing port {backend_port} (attempt {retry_count+1}/{max_retries})")
+            kill_process_on_port(backend_port)
             time.sleep(2)
-        elif is_port_in_use(Config.DASHBOARD_PORT):
+        elif is_port_in_use(dashboard_port):
             show_result(False)
-            show_status(f"Force closing port {Config.DASHBOARD_PORT} (attempt {retry_count+1}/{max_retries})")
-            kill_process_on_port(Config.DASHBOARD_PORT)
+            show_status(f"Force closing port {dashboard_port} (attempt {retry_count+1}/{max_retries})")
+            kill_process_on_port(dashboard_port)
             time.sleep(2)
         else:
             all_clear = True
@@ -252,627 +300,557 @@ def verify_ports_clear():
             break
         
         retry_count += 1
-        if retry_count == max_retries and (is_port_in_use(Config.BACKEND_PORT) or is_port_in_use(Config.DASHBOARD_PORT)):
+        if retry_count == max_retries and (is_port_in_use(backend_port) or is_port_in_use(dashboard_port)):
             log(Colors.RED, f"CRITICAL ERROR: Could not clear ports after {max_retries} attempts.")
-            log(Colors.RED, f"Please manually check and kill processes on ports {Config.BACKEND_PORT} and {Config.DASHBOARD_PORT}.")
-            sys.exit(1)
+            log(Colors.RED, f"Please manually check and kill processes on ports {backend_port} and {dashboard_port}.")
+            return False
     
+    # Final verification that all ports are clear
     if all_clear:
         show_status("Confirming all ports are clear for startup")
         show_result(True)
-
-def check_python_available():
-    """Check if Python 3 is available"""
-    try:
-        subprocess.run(["python3", "--version"], capture_output=True, check=True)
         return True
-    except (subprocess.SubprocessError, FileNotFoundError):
-        try:
-            # On Windows, try 'python' instead
-            subprocess.run(["python", "--version"], capture_output=True, check=True)
-            return True
-        except (subprocess.SubprocessError, FileNotFoundError):
-            return False
-
-def check_venv_module():
-    """Check if the venv module is available"""
-    try:
-        if platform.system() == 'Windows':
-            result = subprocess.run(["python", "-m", "venv", "--help"], capture_output=True)
-        else:
-            result = subprocess.run(["python3", "-m", "venv", "--help"], capture_output=True)
-        return result.returncode == 0
-    except Exception:
-        return False
-
-def check_internet_connection():
-    """Check internet connectivity in a cross-platform way"""
-    show_status("Checking internet connection")
-    hosts = ["github.com", "google.com"]
-    
-    for host in hosts:
-        try:
-            # Using socket instead of ping for better cross-platform compatibility
-            socket.create_connection((host, 80), timeout=2)
-            show_result(True)
-            return True
-        except (socket.timeout, socket.error):
-            continue
-    
-    show_result(False)
     return False
 
-def find_pid_by_name(process_name):
-    """Find process IDs by name in a cross-platform way"""
-    pids = []
-    
+def simple_check_pid(pid):
+    """Simple cross-platform way to check if a process is running without psutil"""
     try:
         if platform.system() == 'Windows':
-            output = subprocess.check_output(['tasklist', '/FI', f'IMAGENAME eq {process_name}'], 
-                                            text=True, errors='ignore')
-            for line in output.strip().split('\n'):
-                if process_name in line:
-                    parts = line.split()
-                    if len(parts) >= 2:
-                        try:
-                            pids.append(int(parts[1]))
-                        except ValueError:
-                            continue
+            subprocess.run(f"tasklist /FI \"PID eq {pid}\"", 
+                          shell=True, check=True, capture_output=True)
+            return True
         else:
-            # Unix systems
-            output = subprocess.check_output(['pgrep', '-f', process_name], 
-                                           text=True, errors='ignore')
-            for line in output.strip().split('\n'):
-                if line:
-                    try:
-                        pids.append(int(line))
-                    except ValueError:
-                        continue
-    except subprocess.SubprocessError:
-        pass
-    
-    return pids
+            os.kill(pid, 0)  # Signal 0 is used to check if process exists
+            return True
+    except (subprocess.SubprocessError, OSError, ValueError):
+        return False
 
-def terminate_process(process, process_name=""):
-    """Terminate a process with a proper shutdown procedure"""
-    if process is None:
-        return
+def verify_clean_environment(project_root, backend_port, dashboard_port):
+    """Verify all processes have been terminated"""
+    clean_env = True
     
+    # Import psutil here where needed
     try:
-        # First try gentle termination
-        process.terminate()
-        
-        # Wait up to 5 seconds for the process to terminate
+        import psutil
+        is_process_running = psutil.pid_exists
+    except ImportError:
+        is_process_running = simple_check_pid
+    
+    # Check for backend PID file and process
+    show_status("Verifying backend process is not running")
+    backend_pid_file = os.path.join(project_root, ".backend_pid")
+    if os.path.exists(backend_pid_file):
         try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            log(Colors.YELLOW, f"Process {process_name} not responding to termination. Forcefully killing...")
-            process.kill()
-    except Exception as e:
-        log(Colors.RED, f"Error while terminating {process_name}: {e}")
-
-def kill_pid_file_processes():
-    """Kill processes using their PID files"""
-    for pid_file in pid_files:
-        if os.path.exists(pid_file):
-            try:
-                with open(pid_file, 'r') as f:
-                    pid = int(f.read().strip())
-                
-                show_status(f"Stopping process with PID {pid}")
-                
-                try:
-                    if platform.system() == 'Windows':
-                        subprocess.run(f"taskkill /F /PID {pid}", shell=True)
-                    else:
-                        # First try a gentle SIGTERM
-                        os.kill(pid, signal.SIGTERM)
-                        
-                        # Give it some time to shut down
-                        time.sleep(2)
-                        
-                        # Check if it's still running
-                        try:
-                            os.kill(pid, 0)  # Signal 0 is used to check if process exists
-                            # Process still exists, force kill
-                            os.kill(pid, signal.SIGKILL)
-                        except OSError:
-                            # Process doesn't exist anymore
-                            pass
-                    
-                    show_result(True)
-                except Exception as e:
-                    show_result(False)
-                    log(Colors.RED, f"Error killing process with PID {pid}: {e}")
-                
-                # Remove the PID file
-                os.remove(pid_file)
-            except Exception as e:
-                log(Colors.RED, f"Error processing PID file {pid_file}: {e}")
-
-def cleanup():
-    """Perform cleanup when the script exits"""
-    log(Colors.YELLOW, "Shutting down all services...")
-    
-    # First terminate tracked processes
-    if backend_process:
-        show_status("Stopping backend server")
-        terminate_process(backend_process, "backend server")
-        show_result(True)
-    
-    if dashboard_process:
-        show_status("Stopping dashboard server")
-        terminate_process(dashboard_process, "dashboard server")
-        show_result(True)
-    
-    # Then any additional processes we're tracking
-    for i, process in enumerate(all_processes):
-        if process and process.poll() is None:  # If process is still running
-            show_status(f"Stopping additional process {i+1}")
-            terminate_process(process, f"process {i+1}")
-            show_result(True)
-    
-    # Finally, check for any processes using our ports
-    if is_port_in_use(Config.BACKEND_PORT):
-        kill_process_on_port(Config.BACKEND_PORT)
-    
-    if is_port_in_use(Config.DASHBOARD_PORT):
-        kill_process_on_port(Config.DASHBOARD_PORT)
-    
-    # Kill processes identified by PID files
-    kill_pid_file_processes()
-    
-    log(Colors.GREEN, "Shutdown complete. Thanks for using Secure Video Summarizer!")
-
-def start_backend_server():
-    """Start the backend server"""
-    global backend_process
-    
-    logger.info("Starting backend server")
-    log(Colors.BLUE, "=== Starting Backend Server ===")
-    
-    # Verify correct backend directory
-    if not os.path.isdir(Config.BACKEND_DIR):
-        error_msg = f"Backend directory not found at {Config.BACKEND_DIR}"
-        logger.error(error_msg)
-        log(Colors.RED, f"Error: {error_msg}")
-        return False
-    
-    backend_script_path = os.path.join(Config.BACKEND_DIR, "run_backend.py" if os.path.exists(os.path.join(Config.BACKEND_DIR, "run_backend.py")) else "run_backend.sh")
-    logger.debug(f"Using backend script: {backend_script_path}")
-    
-    if not os.path.exists(backend_script_path):
-        error_msg = f"Backend script not found at {backend_script_path}"
-        logger.error(error_msg)
-        log(Colors.RED, f"Error: {error_msg}")
-        return False
-    
-    cmd = [backend_script_path]
-    
-    # Add appropriate options
-    if Config.DEBUG_MODE:
-        cmd.append("--debug")
-    else:
-        cmd.append("--no-debug")
-    
-    cmd.extend(["--port", str(Config.BACKEND_PORT)])
-    cmd.extend(["--config", Config.ENVIRONMENT])
-    
-    if Config.INSTALL_DEPENDENCIES:
-        cmd.append("--install-deps")
-    
-    if Config.FORCE_UPDATE_DEPS:
-        cmd.append("--update")
-    
-    if Config.OFFLINE_MODE:
-        cmd.append("--offline")
-    
-    logger.debug(f"Backend command: {cmd}")
-    
-    # Start backend process
-    try:
-        log(Colors.YELLOW, f"Starting backend server on port {Config.BACKEND_PORT}...")
-        
-        # Make the script executable on Unix systems
-        if platform.system() != 'Windows' and backend_script_path.endswith('.sh'):
-            logger.debug("Making shell script executable")
-            subprocess.run(["chmod", "+x", backend_script_path], check=True)
-        
-        if platform.system() == 'Windows' and backend_script_path.endswith('.sh'):
-            # On Windows, if we only have .sh file, notify the user
-            error_msg = "Error: Shell script not supported on Windows. Please use the Python version."
-            logger.error(error_msg)
-            log(Colors.RED, error_msg)
-            return False
-        
-        # Start backend process
-        if backend_script_path.endswith('.py'):
-            python_cmd = "python" if platform.system() == "Windows" else "python3"
-            logger.debug(f"Using Python command: {python_cmd}")
-            backend_process = subprocess.Popen([python_cmd, backend_script_path] + cmd[1:], 
-                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
-                                              text=True, bufsize=1, 
-                                              cwd=Config.PROJECT_ROOT)
-            
-            # Start threads to read output
-            threading.Thread(target=log_process_output, args=(backend_process, "backend", "stdout"), daemon=True).start()
-            threading.Thread(target=log_process_output, args=(backend_process, "backend", "stderr"), daemon=True).start()
-        else:
-            backend_process = subprocess.Popen(cmd, shell=platform.system() == 'Windows',
-                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                              text=True, bufsize=1,
-                                              cwd=Config.PROJECT_ROOT)
-            
-            # Start threads to read output
-            threading.Thread(target=log_process_output, args=(backend_process, "backend", "stdout"), daemon=True).start()
-            threading.Thread(target=log_process_output, args=(backend_process, "backend", "stderr"), daemon=True).start()
-        
-        # Add to our list of processes
-        all_processes.append(backend_process)
-        
-        # Give some time for the server to start
-        time.sleep(3)
-        
-        # Check if the process is still running and the port is active
-        if backend_process.poll() is None and is_port_in_use(Config.BACKEND_PORT):
-            logger.info(f"Backend server started successfully on port {Config.BACKEND_PORT}")
-            log(Colors.GREEN, f"Backend server started successfully on port {Config.BACKEND_PORT}!")
-            return True
-        else:
-            if backend_process.poll() is not None:
-                error_msg = f"Backend process exited with code {backend_process.poll()}"
+            with open(backend_pid_file, 'r') as f:
+                pid = int(f.read().strip())
+            if is_process_running(pid):
+                show_result(False)
+                # Try to kill the process
+                kill_process(pid)
+                clean_env = not is_process_running(pid)
             else:
-                error_msg = f"Backend process started but port {Config.BACKEND_PORT} is not active"
-            
-            logger.error(error_msg)
-            log(Colors.RED, f"Failed to start backend server. {error_msg}")
-            return False
+                show_result(True)
+                os.remove(backend_pid_file)
+        except:
+            show_result(True)
+            try:
+                os.remove(backend_pid_file)
+            except:
+                pass
+    else:
+        show_result(True)
     
-    except Exception as e:
-        error_msg = f"Error starting backend server: {e}"
-        logger.error(error_msg, exc_info=True)
-        log(Colors.RED, error_msg)
-        return False
-
-def log_process_output(process, name, stream_name):
-    """Log the output from a process stream"""
-    stream = process.stdout if stream_name == "stdout" else process.stderr
+    # Check for dashboard PID file and process
+    show_status("Verifying dashboard process is not running")
+    dashboard_pid_file = os.path.join(project_root, ".dashboard_pid")
+    if os.path.exists(dashboard_pid_file):
+        try:
+            with open(dashboard_pid_file, 'r') as f:
+                pid = int(f.read().strip())
+            if is_process_running(pid):
+                show_result(False)
+                # Try to kill the process
+                kill_process(pid)
+                clean_env = not is_process_running(pid)
+            else:
+                show_result(True)
+                os.remove(dashboard_pid_file)
+        except:
+            show_result(True)
+            try:
+                os.remove(dashboard_pid_file)
+            except:
+                pass
+    else:
+        show_result(True)
     
-    for line in iter(stream.readline, ''):
-        if not line:
-            break
-        line = line.strip()
-        if stream_name == "stderr":
-            logger.error(f"{name}: {line}")
-        else:
-            logger.info(f"{name}: {line}")
-
-def start_dashboard_server():
-    """Start the dashboard server"""
-    global dashboard_process
+    # Check ports are clear
+    if not verify_ports_clear(backend_port, dashboard_port):
+        clean_env = False
     
-    log(Colors.BLUE, "=== Starting Dashboard Server ===")
-    
-    dashboard_script_path = os.path.join(Config.BACKEND_DIR, "run_dashboard.py" if os.path.exists(os.path.join(Config.BACKEND_DIR, "run_dashboard.py")) else "run_dashboard.sh")
-    
-    cmd = [dashboard_script_path]
-    
-    # Add appropriate options
-    if Config.DEBUG_MODE:
-        cmd.append("--debug")
-    
-    cmd.extend(["--port", str(Config.DASHBOARD_PORT)])
-    
-    if Config.INSTALL_DEPENDENCIES:
-        cmd.append("--install-deps")
-    
-    if Config.FORCE_UPDATE_DEPS:
-        cmd.append("--update")
-    
-    if Config.OFFLINE_MODE:
-        cmd.append("--offline")
-    
-    # Start dashboard process
-    try:
-        log(Colors.YELLOW, f"Starting dashboard server on port {Config.DASHBOARD_PORT}...")
+    # Final clean environment status
+    if clean_env:
+        show_status("Environment is clean and ready for startup")
+        show_result(True)
+    else:
+        show_status("WARNING: Environment may not be completely clean")
+        show_result(False)
         
-        # Make the script executable on Unix systems
-        if platform.system() != 'Windows' and dashboard_script_path.endswith('.sh'):
-            subprocess.run(["chmod", "+x", dashboard_script_path], check=True)
+        # Force clean by directly killing processes
+        show_status("Attempting to force clean environment")
+        if is_port_in_use(backend_port):
+            pid = find_process_by_port(backend_port)
+            if pid:
+                kill_process(pid)
+        if is_port_in_use(dashboard_port):
+            pid = find_process_by_port(dashboard_port)
+            if pid:
+                kill_process(pid)
         
-        if platform.system() == 'Windows' and dashboard_script_path.endswith('.sh'):
-            # On Windows, if we only have .sh file, notify the user
-            log(Colors.RED, "Error: Shell script not supported on Windows. Please use the Python version.")
-            return False
-        
-        # Start dashboard process
-        if dashboard_script_path.endswith('.py'):
-            python_cmd = "python" if platform.system() == "Windows" else "python3"
-            dashboard_process = subprocess.Popen([python_cmd, dashboard_script_path] + cmd[1:])
-        else:
-            dashboard_process = subprocess.Popen(cmd, shell=platform.system() == 'Windows')
-        
-        # Add to our list of processes
-        all_processes.append(dashboard_process)
-        
-        # Give some time for the server to start
         time.sleep(3)
         
-        # Check if the process is still running and the port is active
-        if dashboard_process.poll() is None and is_port_in_use(Config.DASHBOARD_PORT):
-            log(Colors.GREEN, f"Dashboard server started successfully on port {Config.DASHBOARD_PORT}!")
-            
-            # Try to open the dashboard in the browser
-            if not Config.QUIET_MODE:
-                dashboard_url = f"http://localhost:{Config.DASHBOARD_PORT}"
-                try:
-                    webbrowser.open(dashboard_url)
-                    log(Colors.BLUE, f"Dashboard opened in browser: {dashboard_url}")
-                except Exception as e:
-                    log(Colors.YELLOW, f"Dashboard available at: {dashboard_url}")
-            
-            return True
+        # Recheck
+        if is_port_in_use(backend_port) or is_port_in_use(dashboard_port):
+            show_result(False)
+            log(Colors.RED, "Could not fully clean environment. Try manually shutting down all processes.")
+            return False
         else:
-            log(Colors.RED, "Failed to start dashboard server. Check logs for details.")
+            show_result(True)
+            return True
+    
+    return True
+
+def create_venv(venv_dir, name):
+    """Create a Python virtual environment"""
+    show_status(f"Checking for {name} virtual environment")
+    
+    if not os.path.exists(venv_dir):
+        show_result(False)
+        show_status(f"Creating {name} virtual environment")
+        try:
+            subprocess.run([sys.executable, '-m', 'venv', venv_dir], check=True, capture_output=True)
+            show_result(True)
+        except subprocess.SubprocessError:
+            show_result(False)
+            log(Colors.RED, f"Failed to create {name} virtual environment.")
+            return False
+    else:
+        show_result(True)
+    
+    return True
+
+def configure_default_settings():
+    """Set default configuration"""
+    # Default configuration
+    config = {
+        'PROJECT_ROOT': os.path.dirname(os.path.abspath(__file__)),
+        'BACKEND_PORT': 8081,
+        'DASHBOARD_PORT': 8080,
+        'BACKEND_VENV': os.path.join('backend', 'venv'),
+        'DEBUG_MODE': False,
+        'CONFIG_MODE': 'development'  # Default to development mode
+    }
+    
+    return config
+
+def deactivate_venv():
+    """Attempt to deactivate virtual environment using multiple methods"""
+    show_status("Deactivating virtual environment")
+    
+    if not os.environ.get('VIRTUAL_ENV'):
+        show_result(True)
+        return True
+        
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            # Method 1: Modify environment variables
+            if 'VIRTUAL_ENV' in os.environ:
+                del os.environ['VIRTUAL_ENV']
+            if '_OLD_VIRTUAL_PATH' in os.environ:
+                os.environ['PATH'] = os.environ['_OLD_VIRTUAL_PATH']
+                del os.environ['_OLD_VIRTUAL_PATH']
+            if '_OLD_VIRTUAL_PYTHONHOME' in os.environ:
+                os.environ['PYTHONHOME'] = os.environ['_OLD_VIRTUAL_PYTHONHOME']
+                del os.environ['_OLD_VIRTUAL_PYTHONHOME']
+                
+            # Method 2: Reset Python path
+            if hasattr(sys, 'real_prefix'):
+                sys.prefix = sys.real_prefix
+            elif hasattr(sys, 'base_prefix'):
+                sys.prefix = sys.base_prefix
+                
+            # Method 3: Clean PATH
+            paths = os.environ['PATH'].split(os.pathsep)
+            clean_paths = [p for p in paths if not any(venv_marker in p.lower() 
+                         for venv_marker in ['venv', 'virtualenv', '.env'])]
+            os.environ['PATH'] = os.pathsep.join(clean_paths)
+            
+            # Verify deactivation
+            if not os.environ.get('VIRTUAL_ENV'):
+                show_result(True)
+                return True
+                
+        except Exception as e:
+            if attempt == max_attempts - 1:
+                show_result(False)
+                log(Colors.RED, f"Failed to deactivate virtual environment: {e}")
+                return False
+            time.sleep(1)  # Wait before retry
+            
+    # If all methods fail, try to restart the script outside venv
+    show_status("Attempting to restart script outside virtual environment")
+    try:
+        # Get system Python path without shell commands
+        python_cmd = get_system_python()
+            
+        # Remove venv from PYTHONPATH if present
+        if 'PYTHONPATH' in os.environ:
+            paths = os.environ['PYTHONPATH'].split(os.pathsep)
+            clean_paths = [p for p in paths if not any(venv_marker in p.lower() 
+                         for venv_marker in ['venv', 'virtualenv', '.env'])]
+            if clean_paths:
+                os.environ['PYTHONPATH'] = os.pathsep.join(clean_paths)
+            else:
+                del os.environ['PYTHONPATH']
+            
+        # Restart script with system Python
+        os.execl(python_cmd, python_cmd, *sys.argv)
+    except Exception as e:
+        show_result(False)
+        log(Colors.RED, f"Failed to restart script: {e}")
+        return False
+        
+    return False
+
+def verify_startup_environment():
+    """Verify the environment is clean before starting"""
+    show_status("Verifying clean environment")
+    
+    # Use existing verify_clean_environment function with default config
+    config = configure_default_settings()
+    if not verify_clean_environment(config['PROJECT_ROOT'], config['BACKEND_PORT'], config['DASHBOARD_PORT']):
+        return False
+    
+    # Handle active virtual environment
+    if os.environ.get('VIRTUAL_ENV'):
+        if not deactivate_venv():
             return False
     
-    except Exception as e:
-        log(Colors.RED, f"Error starting dashboard server: {e}")
+    # Remove existing backend venv if present
+    backend_venv = os.path.join(config['PROJECT_ROOT'], 'backend', 'venv')
+    if os.path.exists(backend_venv):
+        show_status("Removing existing virtual environment")
+        try:
+            shutil.rmtree(backend_venv)
+            show_result(True)
+        except Exception as e:
+            show_result(False)
+            log(Colors.RED, f"Failed to remove existing virtual environment: {e}")
+            return False
+    
+    show_result(True)
+    return True
+
+def verify_shutdown():
+    """Verify all processes are stopped and environment is clean"""
+    show_status("Verifying shutdown")
+    
+    # Use existing verify_clean_environment function with default config
+    config = configure_default_settings()
+    if not verify_clean_environment(config['PROJECT_ROOT'], config['BACKEND_PORT'], config['DASHBOARD_PORT']):
+        return False
+    
+    show_result(True)
+    return True
+
+def verify_venv(venv_path):
+    """Verify virtual environment is properly created and accessible"""
+    show_status("Verifying virtual environment")
+    
+    # Check if venv directory exists
+    if not os.path.exists(venv_path):
+        show_result(False)
+        log(Colors.RED, f"Virtual environment not found at {venv_path}")
+        return False
+    
+    # Check for pip executable
+    pip_cmd = os.path.join(venv_path, 'bin', 'pip') if platform.system() != 'Windows' else os.path.join(venv_path, 'Scripts', 'pip.exe')
+    if not os.path.exists(pip_cmd):
+        show_result(False)
+        log(Colors.RED, "pip not found in virtual environment")
+        return False
+    
+    # Try to run pip to verify it works
+    try:
+        subprocess.run([pip_cmd, '--version'], check=True, capture_output=True)
+        show_result(True)
+        return True
+    except subprocess.SubprocessError:
+        show_result(False)
+        log(Colors.RED, "Failed to verify pip in virtual environment")
         return False
 
-def run_tests():
-    """Run the test suite"""
-    log(Colors.BLUE, "=== Running Tests ===")
+def setup_venv(venv_path):
+    """Set up virtual environment with required dependencies"""
+    show_status("Setting up virtual environment")
     
-    test_script_path = os.path.join(Config.PROJECT_ROOT, "run_tests.py" if os.path.exists(os.path.join(Config.PROJECT_ROOT, "run_tests.py")) else "run_tests.sh")
+    # Create venv if it doesn't exist
+    if not os.path.exists(venv_path):
+        log(Colors.CYAN, f"Creating virtual environment at {venv_path}")
+        if not create_venv(venv_path, "backend"):
+            return False
+    
+    # Verify venv
+    if not verify_venv(venv_path):
+        return False
+    
+    # Install psutil first
+    pip_cmd = os.path.join(venv_path, 'bin', 'pip') if platform.system() != 'Windows' else os.path.join(venv_path, 'Scripts', 'pip.exe')
+    log(Colors.CYAN, "Installing psutil...")
+    try:
+        result = subprocess.run([pip_cmd, 'install', 'psutil'], 
+                              check=True, capture_output=True, text=True)
+        log(Colors.GREEN, "psutil installed successfully")
+    except subprocess.SubprocessError as e:
+        log(Colors.RED, f"Failed to install psutil: {e}")
+        log(Colors.RED, f"Error output: {e.stderr}")
+        return False
+    
+    # Install other dependencies
+    log(Colors.CYAN, "Installing project dependencies...")
+    try:
+        result = subprocess.run([pip_cmd, 'install', '-r', os.path.join(os.path.dirname(venv_path), 'requirements.txt')], 
+                              check=True, capture_output=True, text=True)
+        log(Colors.GREEN, "Dependencies installed successfully")
+        show_result(True)
+        return True
+    except subprocess.SubprocessError as e:
+        show_result(False)
+        log(Colors.RED, f"Failed to install dependencies: {e}")
+        log(Colors.RED, f"Error output: {e.stderr}")
+        return False
+
+def start_backend_server(venv_path, config):
+    """Start the backend server"""
+    show_status("Starting backend server")
+    
+    python_cmd = os.path.join(venv_path, 'bin', 'python') if platform.system() != 'Windows' else os.path.join(venv_path, 'Scripts', 'python.exe')
+    backend_script = os.path.join(config['PROJECT_ROOT'], 'backend', 'run_backend.py')
+    
+    if not os.path.exists(backend_script):
+        log(Colors.RED, f"Backend script not found at {backend_script}")
+        return False
     
     try:
-        # Make the script executable on Unix systems
-        if platform.system() != 'Windows' and test_script_path.endswith('.sh'):
-            subprocess.run(["chmod", "+x", test_script_path], check=True)
+        backend_process = subprocess.Popen(
+            [python_cmd, backend_script, '--config', config['CONFIG_MODE']],
+            cwd=os.path.join(config['PROJECT_ROOT'], 'backend'),
+            stdout=subprocess.PIPE if config['DEBUG_MODE'] else None,
+            stderr=subprocess.PIPE if config['DEBUG_MODE'] else None,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
         
-        if platform.system() == 'Windows' and test_script_path.endswith('.sh'):
-            # On Windows, if we only have .sh file, notify the user
-            log(Colors.RED, "Error: Shell script not supported on Windows. Please use the Python version.")
+        # Save backend PID
+        with open(os.path.join(config['PROJECT_ROOT'], '.backend_pid'), 'w') as f:
+            f.write(str(backend_process.pid))
+        
+        # Only monitor output in debug mode
+        if config['DEBUG_MODE']:
+            def read_output(pipe, is_error=False):
+                for line in pipe:
+                    if is_error:
+                        log(Colors.RED, line.strip())
+                    else:
+                        log(Colors.CYAN, line.strip())
+            
+            # Start output monitoring threads
+            import threading
+            stdout_thread = threading.Thread(target=read_output, args=(backend_process.stdout, False))
+            stderr_thread = threading.Thread(target=read_output, args=(backend_process.stderr, True))
+            stdout_thread.daemon = True
+            stderr_thread.daemon = True
+            stdout_thread.start()
+            stderr_thread.start()
+        
+        # Check if process started successfully
+        time.sleep(2)  # Give it a moment to start
+        if backend_process.poll() is not None:
+            # Process died immediately
+            if config['DEBUG_MODE']:
+                stderr = backend_process.stderr.read() if backend_process.stderr else "No error output available"
+                log(Colors.RED, f"Backend server failed to start: {stderr}")
+            else:
+                log(Colors.RED, "Backend server failed to start")
             return False
         
-        # Run tests
-        log(Colors.YELLOW, "Running test suite...")
-        
-        if test_script_path.endswith('.py'):
-            python_cmd = "python" if platform.system() == "Windows" else "python3"
-            result = subprocess.run([python_cmd, test_script_path], capture_output=True, text=True)
-        else:
-            result = subprocess.run([test_script_path], capture_output=True, text=True, shell=platform.system() == 'Windows')
-        
-        # Output test results
-        print(result.stdout)
-        if result.stderr:
-            print(result.stderr)
-        
-        if result.returncode == 0:
-            log(Colors.GREEN, "Tests completed successfully!")
-            return True
-        else:
-            log(Colors.RED, f"Tests failed with exit code {result.returncode}")
-            return False
-    
+        show_result(True)
+        return True
     except Exception as e:
-        log(Colors.RED, f"Error running tests: {e}")
+        show_result(False)
+        log(Colors.RED, f"Failed to start backend server: {e}")
         return False
 
-def summarize_options():
-    """Display a summary of the current configuration"""
-    log(Colors.CYAN, "=== Secure Video Summarizer Configuration ===")
+def start_frontend_server(config):
+    """Start the frontend development server"""
+    show_status("Starting frontend server")
     
-    if Config.RUN_TESTS:
-        print(f"Mode: Test Runner")
-        print(f"Debug Mode: {'Enabled' if Config.DEBUG_MODE else 'Disabled'}")
-    else:
-        if Config.DEVELOPMENT_MODE:
-            print(f"Mode: Development")
-        elif Config.COLD_START:
-            print(f"Mode: Cold Start")
-        else:
-            print(f"Mode: {'Standard' if Config.RUN_BACKEND and Config.RUN_DASHBOARD else 'Custom'}")
+    frontend_dir = os.path.join(config['PROJECT_ROOT'], 'frontend')
+    if not os.path.exists(frontend_dir):
+        log(Colors.RED, f"Frontend directory not found at {frontend_dir}")
+        return False
+    
+    npm_cmd = find_npm()
+    
+    try:
+        # Install dependencies
+        subprocess.run([npm_cmd, 'install'], 
+                      cwd=frontend_dir,
+                      check=True, 
+                      capture_output=True, 
+                      text=True)
+    except subprocess.SubprocessError as e:
+        log(Colors.RED, f"Failed to install frontend dependencies: {e}")
+        log(Colors.RED, f"Error output: {e.stderr}")
+        return False
+    
+    try:
+        # Start the development server
+        frontend_process = subprocess.Popen(
+            [npm_cmd, 'start'],
+            cwd=frontend_dir,
+            stdout=subprocess.PIPE if config['DEBUG_MODE'] else None,
+            stderr=subprocess.PIPE if config['DEBUG_MODE'] else None,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
         
-        print(f"Backend Server: {'Enabled' if Config.RUN_BACKEND else 'Disabled'} (Port: {Config.BACKEND_PORT})")
-        print(f"Dashboard Server: {'Enabled' if Config.RUN_DASHBOARD else 'Disabled'} (Port: {Config.DASHBOARD_PORT})")
-        print(f"Install Dependencies: {'Yes' if Config.INSTALL_DEPENDENCIES else 'No'}")
-        print(f"Debug Mode: {'Enabled' if Config.DEBUG_MODE else 'Disabled'}")
-        print(f"Offline Mode: {'Enabled' if Config.OFFLINE_MODE else 'Disabled'}")
-    
-    print()
+        # Save frontend PID
+        with open(os.path.join(config['PROJECT_ROOT'], '.frontend_pid'), 'w') as f:
+            f.write(str(frontend_process.pid))
+        
+        # Check if process started successfully
+        time.sleep(2)  # Give it a moment to start
+        if frontend_process.poll() is not None:
+            # Process died immediately
+            stderr = frontend_process.stderr.read() if frontend_process.stderr else "No error output available"
+            log(Colors.RED, f"Frontend server failed to start: {stderr}")
+            return False
+        
+        show_result(True)
+        return True
+    except Exception as e:
+        show_result(False)
+        log(Colors.RED, f"Failed to start frontend server: {e}")
+        return False
 
-def handle_shutdown_signal(sig, frame):
-    """Handle shutdown signals gracefully"""
-    print()  # Ensure we're on a new line
-    log(Colors.YELLOW, "Shutdown signal received. Cleaning up...")
-    sys.exit(0)  # This will trigger the atexit handlers
+def check_backend_health(port):
+    """Check if backend server is healthy and responding"""
+    try:
+        import requests  # Import here where needed
+        response = requests.get(f"http://localhost:{port}/health")
+        return response.status_code == 200
+    except requests.exceptions.RequestException as e:
+        log(Colors.RED, f"Backend health check failed: {e}")
+        return False
+
+def check_frontend_health(port):
+    """Check if frontend server is healthy and responding"""
+    try:
+        import requests
+        response = requests.get(f"http://localhost:{port}/health")
+        return response.status_code == 200
+    except requests.exceptions.RequestException as e:
+        log(Colors.RED, f"Frontend health check failed: {e}")
+        return False
+
+def check_extension_health(port):
+    """Check if extension server is healthy and responding"""
+    try:
+        import requests
+        response = requests.get(f"http://localhost:{port}/health")
+        return response.status_code == 200
+    except requests.exceptions.RequestException as e:
+        log(Colors.RED, f"Extension health check failed: {e}")
+        return False
+
+def verify_servers_running(config):
+    """Verify all servers are running and healthy"""
+    show_status("Verifying servers are running")
+    
+    # Wait a bit for servers to start
+    time.sleep(5)
+    
+    # Check backend
+    if not check_backend_health(config['BACKEND_PORT']):
+        return False
+    
+    # Check frontend
+    if not check_frontend_health(config['DASHBOARD_PORT']):
+        return False
+    
+    # Check extension if it's enabled
+    if config.get('ENABLE_EXTENSION', False) and not check_extension_health(config['EXTENSION_PORT']):
+        return False
+    
+    show_result(True)
+    return True
 
 def main():
-    """Main function"""
-    # Set logging level based on debug mode
-    if Config.DEBUG_MODE:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(Config.LOG_LEVEL)
+    """Main entry point for the application"""
+    # Check dependencies first
+    if not ensure_script_dependencies():
+        log(Colors.RED, "Required dependencies are not available")
+        return 1
+
+    # Get configuration
+    config = configure_default_settings()
     
-    # Log system information
-    logger.info(f"Starting SVS Application on {platform.system()} {platform.release()}")
-    logger.info(f"Python version: {platform.python_version()}")
-    logger.info(f"Working directory: {os.getcwd()}")
-    logger.info(f"Project root: {Config.PROJECT_ROOT}")
+    # Verify clean environment before starting
+    if not verify_startup_environment():
+        log(Colors.RED, "Cannot start: Environment is not clean")
+        return 1
     
-    # Register cleanup handler to run on exit
-    atexit.register(cleanup)
-    
-    # Set up signal handlers for graceful shutdown
-    signal.signal(signal.SIGINT, handle_shutdown_signal)
-    signal.signal(signal.SIGTERM, handle_shutdown_signal)
-    
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Start the Secure Video Summarizer application")
-    parser.add_argument("--mode", choices=["both", "backend", "dashboard", "cold", "dev", "test"], 
-                      default="both", help="Startup mode")
-    parser.add_argument("--backend-port", type=int, default=Config.BACKEND_PORT, 
-                      help="Backend server port")
-    parser.add_argument("--dashboard-port", type=int, default=Config.DASHBOARD_PORT, 
-                      help="Dashboard server port")
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    parser.add_argument("--offline", action="store_true", help="Enable offline mode")
-    parser.add_argument("--no-deps", action="store_true", help="Skip dependency installation")
-    parser.add_argument("--force-update", action="store_true", help="Force update dependencies")
-    parser.add_argument("--save-config", action="store_true", help="Save configuration for future use")
-    parser.add_argument("--quiet", action="store_true", help="Quiet mode (reduced output)")
-    
-    args = parser.parse_args()
-    logger.debug(f"Command line arguments: {args}")
-    
-    # Apply command line arguments to config
-    Config.BACKEND_PORT = args.backend_port
-    Config.DASHBOARD_PORT = args.dashboard_port
-    Config.DEBUG_MODE = args.debug
-    Config.OFFLINE_MODE = args.offline
-    Config.INSTALL_DEPENDENCIES = not args.no_deps
-    Config.FORCE_UPDATE_DEPS = args.force_update
-    Config.SAVE_CONFIG = args.save_config
-    Config.QUIET_MODE = args.quiet
-    
-    # Set logging level based on debug mode
-    if Config.DEBUG_MODE:
-        logger.setLevel(logging.DEBUG)
-        logger.debug("Debug mode enabled - verbose logging activated")
-    
-    logger.info(f"Configuration: {vars(Config)}")
-    
-    if args.mode == "backend":
-        Config.RUN_BACKEND = True
-        Config.RUN_DASHBOARD = False
-        logger.info("Mode: Backend only")
-    elif args.mode == "dashboard":
-        Config.RUN_BACKEND = False
-        Config.RUN_DASHBOARD = True
-        logger.info("Mode: Dashboard only")
-    elif args.mode == "cold":
-        Config.COLD_START = True
-        logger.info("Mode: Cold start")
-    elif args.mode == "dev":
-        Config.DEVELOPMENT_MODE = True
-        Config.DEBUG_MODE = True
-        logger.setLevel(logging.DEBUG)
-        logger.info("Mode: Development (debug enabled)")
-    elif args.mode == "test":
-        Config.RUN_TESTS = True
-        logger.info("Mode: Test runner")
-    else:
-        logger.info("Mode: Standard (both backend and dashboard)")
-    
-    # Display welcome message
-    if not Config.QUIET_MODE:
-        print("\n" + "=" * 60)
-        log(Colors.BLUE, "       Secure Video Summarizer - Startup Tool")
-        print("=" * 60 + "\n")
-    
-    # Verify directories first
-    if not verify_directories():
-        logger.error("Directory verification failed. Exiting.")
+    # Set up backend virtual environment
+    backend_venv_path = os.path.join(config['PROJECT_ROOT'], 'backend', 'venv')
+    if not setup_venv(backend_venv_path):
         sys.exit(1)
     
-    # Check if running in a virtual environment
-    if is_in_virtualenv():
-        logger.warning("Running in a virtual environment. This may cause conflicts.")
-        log(Colors.YELLOW, "Warning: You are running this script from within a virtual environment.")
-        log(Colors.YELLOW, "This may cause conflicts with the virtual environments created for SVS components.")
-    
-    # Verify virtual environments
-    if not check_venv_exists():
-        logger.error("Virtual environment check failed. Exiting.")
+    # Start backend server
+    if not start_backend_server(backend_venv_path, config):
         sys.exit(1)
     
-    # Pre-startup checks
-    verify_ports_clear()
-    
-    # Check for Python environment
-    if not check_python_available():
-        error_msg = "Error: Python 3 is not available. Please install Python 3.6 or newer."
-        logger.error(error_msg)
-        log(Colors.RED, error_msg)
+    # Start frontend server
+    if not start_frontend_server(config):
         sys.exit(1)
     
-    if not check_venv_module():
-        error_msg = "Error: Python venv module is not available. This is required for virtual environments."
-        logger.error(error_msg)
-        log(Colors.RED, error_msg)
+    # Verify servers are running and healthy
+    if not verify_servers_running(config):
+        log(Colors.RED, "Health checks failed. Please check the logs for details.")
         sys.exit(1)
     
-    # Summarize options
-    summarize_options()
+    log(Colors.GREEN, "Application started successfully!")
+    log(Colors.GREEN, f"Backend running on http://localhost:{config['BACKEND_PORT']}")
+    log(Colors.GREEN, f"Frontend running on http://localhost:{config['DASHBOARD_PORT']}")
+    return 0
+
+def shutdown():
+    """Shutdown the application"""
+    show_status("Shutting down application")
     
-    # Run tests if configured
-    if Config.RUN_TESTS:
-        logger.info("Running tests")
-        success = run_tests()
-        if success:
-            logger.info("Tests completed successfully")
-        else:
-            logger.error("Tests failed")
-        sys.exit(0 if success else 1)
+    # Stop processes
+    stop_processes()
     
-    # Start backend if configured
-    if Config.RUN_BACKEND:
-        logger.info("Starting backend server")
-        if not start_backend_server():
-            error_msg = "Backend server failed to start. Exiting."
-            logger.error(error_msg)
-            log(Colors.RED, error_msg)
-            sys.exit(1)
+    # Verify shutdown
+    if not verify_shutdown():
+        log(Colors.RED, "Shutdown verification failed")
+        return 1
     
-    # Start dashboard if configured
-    if Config.RUN_DASHBOARD:
-        logger.info("Starting dashboard server")
-        if not start_dashboard_server():
-            error_msg = "Dashboard server failed to start. Exiting."
-            logger.error(error_msg)
-            log(Colors.RED, error_msg)
-            sys.exit(1)
-    
-    logger.info("Startup complete")
-    log(Colors.GREEN, "Startup complete!")
-    
-    if not Config.QUIET_MODE:
-        dashboard_url = f"http://localhost:{Config.DASHBOARD_PORT}" if Config.RUN_DASHBOARD else "Not running"
-        backend_url = f"http://localhost:{Config.BACKEND_PORT}" if Config.RUN_BACKEND else "Not running"
-        
-        log(Colors.CYAN, "=== Service URLs ===")
-        print(f"Backend API: {backend_url}")
-        print(f"Dashboard: {dashboard_url}")
-        print()
-        log(Colors.YELLOW, "Press Ctrl+C to stop the application...")
-    
-    try:
-        # Keep the script running until user interrupts
-        while True:
-            time.sleep(1)
-            
-            # Check if our processes are still running
-            if Config.RUN_BACKEND and backend_process and backend_process.poll() is not None:
-                error_msg = "Backend server has stopped unexpectedly!"
-                logger.error(error_msg)
-                log(Colors.RED, error_msg)
-                sys.exit(1)
-            
-            if Config.RUN_DASHBOARD and dashboard_process and dashboard_process.poll() is not None:
-                error_msg = "Dashboard server has stopped unexpectedly!"
-                logger.error(error_msg)
-                log(Colors.RED, error_msg)
-                sys.exit(1)
-    except KeyboardInterrupt:
-        # Will trigger our atexit handler
-        logger.info("Received keyboard interrupt, initiating shutdown")
-        pass
+    show_result(True)
+    return 0
 
 if __name__ == "__main__":
-    # Need to import threading here to avoid issues with signal handlers
-    import threading
-    main() 
+    sys.exit(main()) 

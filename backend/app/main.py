@@ -100,7 +100,7 @@ def create_app(config_name="production"):
             raise
         
         # Set up CORS
-        origins = app.config.get('ALLOWED_ORIGINS', ['http://localhost:3000'])
+        origins = app.config.get('ALLOWED_ORIGINS', ['http://localhost:8080'])
         # Allow any extension ID since we validate it in the request handlers
         extension_id = app.config.get('BROWSER_EXTENSION_ID', '')
         if extension_id:
@@ -220,7 +220,7 @@ def run_app():
                         handlers=[logging.StreamHandler()])
     
     parser = argparse.ArgumentParser(description='Secure Video Summarizer')
-    parser.add_argument('--port', type=int, default=8080, help='Port to run the server on')
+    parser.add_argument('--port', type=int, default=8081, help='Port to run the server on')
     parser.add_argument('--debug', action='store_true', help='Run in debug mode')
     parser.add_argument('--config', type=str, default='production', choices=['development', 'testing', 'production'],
                         help='Configuration to use')

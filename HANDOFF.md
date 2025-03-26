@@ -18,6 +18,17 @@
    - Added `google-auth-oauthlib` to `requirements.txt`
    - Added `psutil` to `requirements.txt`
 
+4. Removed redundant shell scripts in favor of Python implementations:
+   - Removed `create_feature_branches.sh` → `create_feature_branches.py`
+     - Purpose: Creates feature branches for development
+     - Python version provides better error handling and cross-platform compatibility
+   - Removed `setup_branches.sh` → `setup_branches.py`
+     - Purpose: Sets up development branches and configurations
+     - Python version offers more robust branch management
+   - Removed `run_app.sh` → `start_svs_application.py` and `stop_svs_application.py`
+     - Purpose: Manages application startup and shutdown
+     - Split into two Python scripts for better process management and error handling
+
 ### Current Issues
 1. Backend fails to start with error: `ModuleNotFoundError: No module named 'google_auth_oauthlib'`
    - Package is in requirements.txt but not installed in virtual environment
@@ -51,6 +62,7 @@
 - Added `google-auth-oauthlib` to `requirements.txt`
 - Standardized port configuration across the application
 - Created script-level virtual environment for dependencies
+- Removed shell scripts in favor of Python implementations for better cross-platform compatibility
 
 ## Known Issues
 1. Backend fails to start with error: `ModuleNotFoundError: No module named 'google_auth_oauthlib'`
@@ -66,4 +78,5 @@
 - The application uses a hybrid approach with Python backend and React frontend
 - Port configuration: Backend on 8081, Frontend on 8080
 - The startup script (`start_svs_application.py`) handles both servers
-- Script-level virtual environment (.script_venv) is used for startup script dependencies 
+- Script-level virtual environment (.script_venv) is used for startup script dependencies
+- All shell scripts have been replaced with Python implementations for better cross-platform compatibility and error handling 
